@@ -68,13 +68,19 @@ import { withBase } from '../lib/url';
 		}
 		.tzeruf {
 			text-align: center;
-			font-size: 1.3rem;
+			font-size: 1.1rem;
 			line-height: 1.9;
 			margin: 12px 0 4px;
+		}
+		.tzeruf .tzeruf-label {
+			color: var(--text);
+		}
+		.tzeruf .tzeruf-letters {
 			color: #e08787;
+			font-size: 1.3rem;
 			letter-spacing: 2px;
 		}
-		.season-row {
+		:global(.season-row) {
 			text-align: center;
 			font-size: 0.92rem;
 			color: var(--text-dim);
@@ -87,7 +93,11 @@ import { withBase } from '../lib/url';
 			color: var(--gold-light);
 			margin: 4px 0;
 		}
-		.sefira-row {
+		/* :global() -- .sefira-row/.season-row/.label/.value are created at runtime via
+		   document.createElement in the client script below, not present in this
+		   component's template at build time, so Astro's automatic style scoping
+		   (which adds a data-astro-cid attribute selector) would never match them. */
+		:global(.sefira-row) {
 			display: flex;
 			justify-content: space-between;
 			align-items: baseline;
@@ -95,16 +105,16 @@ import { withBase } from '../lib/url';
 			padding: 10px 4px;
 			border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 		}
-		.sefira-row:last-child {
+		:global(.sefira-row:last-child) {
 			border-bottom: none;
 		}
-		.sefira-row .label {
+		:global(.sefira-row .label) {
 			color: var(--text-dim);
 			font-size: 0.95rem;
-			flex: 1 1 auto;
+			flex: 0 1 auto;
 			min-width: 0;
 		}
-		.sefira-row .value {
+		:global(.sefira-row .value) {
 			font-weight: 700;
 			font-size: 0.98rem;
 			flex: 0 0 auto;
@@ -139,7 +149,9 @@ import { withBase } from '../lib/url';
 
 			<div class="card" id="pasukCard">
 				<div class="pasuk" id="pasukLine"></div>
-				<div class="tzeruf" id="tzerufLine"></div>
+				<div class="tzeruf">
+					<span class="tzeruf-label">צירוף השם: </span><span class="tzeruf-letters" id="tzerufLine"></span>
+				</div>
 			</div>
 
 			<div class="card" id="roshChodeshCard" style="display: none">
