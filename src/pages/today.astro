@@ -1,0 +1,218 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/url';
+---
+
+<BaseLayout
+	title="הכתובת של היום — הכתובת היומית לפי הרש״ש"
+	description="הכתובת הקבלית של היום, לפי כתבי הרש״ש: ספירת החודש, מקום העמידה, הפסוק וצירוף ההוי״ה, וכל ספירות המערכת."
+>
+	<style>
+		.wrap {
+			max-width: 640px;
+			margin: 0 auto;
+			padding: 40px 20px 56px;
+		}
+		.back-link {
+			display: inline-block;
+			color: var(--text-dim);
+			text-decoration: none;
+			font-size: 0.9rem;
+			margin-bottom: 24px;
+		}
+		.back-link:hover {
+			color: var(--text);
+		}
+		h1 {
+			font-size: 1.5rem;
+			color: var(--gold-light);
+			text-align: center;
+			margin: 0 0 28px;
+		}
+		#loading,
+		#error {
+			text-align: center;
+			color: var(--text-dim);
+			padding: 40px 0;
+		}
+		#error {
+			color: #e08787;
+			display: none;
+		}
+		#content {
+			display: none;
+		}
+		.card {
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 16px;
+			padding: 20px 22px;
+			margin-bottom: 16px;
+		}
+		.date-line {
+			text-align: center;
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--gold-light);
+		}
+		.evar-line {
+			text-align: center;
+			color: var(--text-dim);
+			margin-top: 4px;
+		}
+		.pasuk {
+			text-align: center;
+			font-size: 1.2rem;
+			line-height: 1.9;
+			margin: 4px 0;
+		}
+		.rosh-chodesh {
+			text-align: center;
+			font-size: 1.05rem;
+			color: var(--gold-light);
+			margin: 4px 0;
+		}
+		.sefira-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: baseline;
+			gap: 12px;
+			padding: 10px 4px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+		}
+		.sefira-row:last-child {
+			border-bottom: none;
+		}
+		.sefira-row .label {
+			color: var(--text-dim);
+			font-size: 0.95rem;
+			flex: 1 1 auto;
+			min-width: 0;
+		}
+		.sefira-row .value {
+			font-weight: 700;
+			font-size: 0.98rem;
+			flex: 0 0 auto;
+			white-space: nowrap;
+		}
+		.system-line {
+			text-align: center;
+			font-size: 0.95rem;
+			line-height: 1.8;
+			color: var(--text-dim);
+		}
+		.card h2 {
+			margin: 0 0 10px;
+			font-size: 0.85rem;
+			color: var(--text-dim);
+			font-weight: 600;
+		}
+	</style>
+
+	<div class="wrap">
+		<a class="back-link" href={withBase('')}>→ חזרה</a>
+		<h1>הכתובת של היום</h1>
+
+		<div id="loading">טוען...</div>
+		<div id="error">לא ניתן היה לטעון את התאריך העברי. נסו לרענן את העמוד.</div>
+
+		<div id="content">
+			<div class="card">
+				<div class="date-line" id="dateLine"></div>
+				<div class="evar-line" id="evarLine"></div>
+			</div>
+
+			<div class="card" id="pasukCard">
+				<div class="pasuk" id="pasukLine"></div>
+			</div>
+
+			<div class="card" id="roshChodeshCard" style="display: none">
+				<div class="rosh-chodesh" id="roshChodeshLine"></div>
+			</div>
+
+			<div class="card" id="sefirotTable"></div>
+
+			<div class="card">
+				<h2>מערכת ימים</h2>
+				<div class="system-line" id="systemLine"></div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		import { fetchHebrewDate, fetchMonthForSefira } from '../lib/hebrewDate';
+		import { computeDailyContent } from '../lib/dailyContent';
+
+		async function render() {
+			const loading = document.getElementById('loading')!;
+			const error = document.getElementById('error')!;
+			const content = document.getElementById('content')!;
+
+			try {
+				const now = new Date();
+				const hebrewDate = await fetchHebrewDate(now);
+
+				const yesterday = new Date(now);
+				yesterday.setDate(yesterday.getDate() - 1);
+				const yesterdayHebrew = await fetchHebrewDate(yesterday);
+
+				const monthForSefira = await fetchMonthForSefira(now, hebrewDate);
+
+				const data = computeDailyContent({
+					year: hebrewDate.year,
+					month: hebrewDate.month,
+					day: hebrewDate.day,
+					weekday: hebrewDate.weekday,
+					monthForSefira,
+					yesterdayDay: yesterdayHebrew.day,
+				});
+
+				(document.getElementById('dateLine') as HTMLElement).textContent = data.hebrewDateLine;
+				(document.getElementById('evarLine') as HTMLElement).textContent = `מקום עמידתו ${data.monthEvar}`;
+				(document.getElementById('pasukLine') as HTMLElement).textContent = data.monthPasuk;
+
+				if (data.roshChodeshLine) {
+					(document.getElementById('roshChodeshLine') as HTMLElement).textContent = data.roshChodeshLine;
+					(document.getElementById('roshChodeshCard') as HTMLElement).style.display = 'block';
+				}
+
+				const rows: [string, string][] = [
+					['ספירת היום', data.daySefira],
+					['פרצוף השבוע', data.weekFace],
+					['ספירת החודש', data.monthSefira],
+					['ספירת השנה', data.yearSefira],
+					['ספירת העשרות שנה', data.decadeSefira],
+					['ספירת המאות שנה', data.hundredSefira],
+					['ספירת האלף שנה', data.thousandSefira],
+					['שנת שמיטה', data.shenatShemita],
+					['לשמיטה', data.shemita],
+					['יובל', data.yovel],
+				];
+				const table = document.getElementById('sefirotTable')!;
+				for (const [label, value] of rows) {
+					const row = document.createElement('div');
+					row.className = 'sefira-row';
+					const labelEl = document.createElement('span');
+					labelEl.className = 'label';
+					labelEl.textContent = label;
+					const valueEl = document.createElement('span');
+					valueEl.className = 'value';
+					valueEl.textContent = value;
+					row.append(labelEl, valueEl);
+					table.append(row);
+				}
+
+				(document.getElementById('systemLine') as HTMLElement).textContent = data.systemDaysLine;
+
+				loading.style.display = 'none';
+				content.style.display = 'block';
+			} catch (e) {
+				console.error(e);
+				loading.style.display = 'none';
+				error.style.display = 'block';
+			}
+		}
+
+		render();
+	</script>
+</BaseLayout>

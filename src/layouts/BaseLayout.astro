@@ -1,0 +1,62 @@
+---
+import { withBase } from '../lib/url';
+
+interface Props {
+	title: string;
+	description: string;
+	ogImagePath?: string;
+}
+const { title, description, ogImagePath = 'icon.png' } = Astro.props;
+const canonicalUrl = Astro.url.toString();
+const ogImageUrl = new URL(withBase(ogImagePath), Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>{title}</title>
+	<meta name="description" content={description} />
+
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:title" content={title} />
+	<meta property="og:description" content={description} />
+	<meta property="og:image" content={ogImageUrl} />
+	<meta property="og:locale" content="he_IL" />
+
+	<meta name="twitter:card" content="summary" />
+	<meta name="twitter:title" content={title} />
+	<meta name="twitter:description" content={description} />
+	<meta name="twitter:image" content={ogImageUrl} />
+
+	<style>
+		:root {
+			--navy: #122240;
+			--navy2: #0a1428;
+			--gold: #d4af5a;
+			--gold-light: #f0d28c;
+			--text: #eef0f4;
+			--text-dim: #b8bfcc;
+		}
+		* {
+			box-sizing: border-box;
+		}
+		html,
+		body {
+			margin: 0;
+			padding: 0;
+			background: linear-gradient(180deg, var(--navy2), var(--navy));
+			color: var(--text);
+			font-family: -apple-system, 'Arial Hebrew', 'SF Hebrew', Arial, sans-serif;
+			min-height: 100vh;
+			max-width: 100vw;
+			overflow-x: hidden;
+		}
+	</style>
+</head>
+<body>
+	<slot />
+</body>
+</html>
