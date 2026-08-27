@@ -66,6 +66,11 @@ import { withBase } from '../lib/url';
 			line-height: 1.9;
 			margin: 4px 0;
 		}
+		:global(.pasuk .pasuk-highlight) {
+			color: #4a9eff;
+			font-size: 1.45rem;
+			font-weight: 700;
+		}
 		.tzeruf {
 			text-align: center;
 			font-size: 1.1rem;
@@ -174,7 +179,7 @@ import { withBase } from '../lib/url';
 
 	<script>
 		import { fetchHebrewDate, fetchMonthForSefira } from '../lib/hebrewDate';
-		import { computeDailyContent } from '../lib/dailyContent';
+		import { computeDailyContent, getPasukSegments } from '../lib/dailyContent';
 
 		async function render() {
 			const loading = document.getElementById('loading')!;
@@ -202,7 +207,19 @@ import { withBase } from '../lib/url';
 
 				(document.getElementById('dateLine') as HTMLElement).textContent = data.hebrewDateLine;
 				(document.getElementById('evarLine') as HTMLElement).textContent = `מקום עמידתו ${data.monthEvar}`;
-				(document.getElementById('pasukLine') as HTMLElement).textContent = data.monthPasuk;
+
+				const pasukEl = document.getElementById('pasukLine') as HTMLElement;
+				for (const segment of getPasukSegments(monthForSefira)) {
+					if (segment.highlighted) {
+						const span = document.createElement('span');
+						span.className = 'pasuk-highlight';
+						span.textContent = segment.text;
+						pasukEl.append(span);
+					} else {
+						pasukEl.append(document.createTextNode(segment.text));
+					}
+				}
+
 				(document.getElementById('tzerufLine') as HTMLElement).textContent = data.tzerufHavaya;
 
 				if (data.roshChodeshLine) {

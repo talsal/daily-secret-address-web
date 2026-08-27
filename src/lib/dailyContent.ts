@@ -143,10 +143,14 @@ function graphemeAt(text: string, startIndex: number): string {
 	return text.slice(startIndex, end);
 }
 
-function extractTzeruf(fullText: string, isSuffix: boolean): string {
+// עבור כל מילה בפסוק, מוצא את "מיקום ההדגשה" -- האות הראשונה של המילה בד"כ,
+// או האחרונה (בין העיצורים העבריים, לא כולל ניקוד) בחודשי סופי תיבות.
+// מחזיר גם את מיקום תחילת כל מילה (currentPos), כי צירוף ההוי"ה שואב את הניקוד
+// דווקא משם -- גם כשהאות המודגשת/הנבחרת עצמה היא האחרונה.
+function computeHighlightLocations(fullText: string, isSuffix: boolean): { wordStart: number; highlightLocation: number }[] {
 	const words = fullText.split(' ');
 	let currentPos = 0;
-	const letters: string[] = [];
+	const result: { wordStart: number; highlightLocation: number }[] = [];
 
 	for (const word of words) {
 		if (word.length > 0) {
@@ -161,29 +165,69 @@ function extractTzeruf(fullText: string, isSuffix: boolean): string {
 					}
 				}
 			}
-
-			const chosenLetterOnly = fullText[highlightLocation] ?? '';
-			const firstLetterFull = graphemeAt(fullText, currentPos);
-
-			let letterAttr = chosenLetterOnly;
-			for (const scalar of firstLetterFull) {
-				const val = scalar.codePointAt(0)!;
-				if (val === 0x05c1 || val === 0x05c2) continue; // נקודת שין/שמאל -- מסונן
-				if (val === 0x05bc) {
-					if (chosenLetterOnly === 'ו') continue; // שורוק על וי"ו -- לא מוסיפים סימן נפרד
-					letterAttr = scalar + letterAttr;
-					continue;
-				}
-				if (val >= 0x05b0 && val <= 0x05bb) {
-					letterAttr = letterAttr + scalar;
-				}
-			}
-			letters.push(letterAttr);
+			result.push({ wordStart: currentPos, highlightLocation });
 		}
 		currentPos += word.length + 1;
 	}
 
+	return result;
+}
+
+function extractTzeruf(fullText: string, isSuffix: boolean): string {
+	const locations = computeHighlightLocations(fullText, isSuffix);
+	const letters: string[] = [];
+
+	for (const { wordStart, highlightLocation } of locations) {
+		const chosenLetterOnly = fullText[highlightLocation] ?? '';
+		const firstLetterFull = graphemeAt(fullText, wordStart);
+
+		let letterAttr = chosenLetterOnly;
+		for (const scalar of firstLetterFull) {
+			const val = scalar.codePointAt(0)!;
+			if (val === 0x05c1 || val === 0x05c2) continue; // נקודת שין/שמאל -- מסונן
+			if (val === 0x05bc) {
+				if (chosenLetterOnly === 'ו') continue; // שורוק על וי"ו -- לא מוסיפים סימן נפרד
+				letterAttr = scalar + letterAttr;
+				continue;
+			}
+			if (val >= 0x05b0 && val <= 0x05bb) {
+				letterAttr = letterAttr + scalar;
+			}
+		}
+		letters.push(letterAttr);
+	}
+
 	return letters.join('  ');
+}
+
+export interface PasukSegment {
+	text: string;
+	highlighted: boolean;
+}
+
+// מפרק את הפסוק לקטעים, כאשר הקטעים המודגשים הם בדיוק אותן אותיות (עם הניקוד
+// הצמוד להן עצמן) שנבחרו לצירוף ההוי"ה -- מקביל להדגשה הכחולה בתוך הפסוק
+// באפליקציית ה-iOS (applyStyle, highlightRange).
+export function getPasukSegments(monthForSefira: string): PasukSegment[] {
+	const fullText = MONTH_PASUK[monthForSefira];
+	if (!fullText) return [];
+	const isSuffix = SUFFIX_MONTHS.has(monthForSefira);
+	const locations = computeHighlightLocations(fullText, isSuffix);
+
+	const segments: PasukSegment[] = [];
+	let pos = 0;
+	for (const { highlightLocation } of locations) {
+		const grapheme = graphemeAt(fullText, highlightLocation);
+		if (highlightLocation > pos) {
+			segments.push({ text: fullText.slice(pos, highlightLocation), highlighted: false });
+		}
+		segments.push({ text: grapheme, highlighted: true });
+		pos = highlightLocation + grapheme.length;
+	}
+	if (pos < fullText.length) {
+		segments.push({ text: fullText.slice(pos), highlighted: false });
+	}
+	return segments;
 }
 
 export function computeDailyContent(params: {
