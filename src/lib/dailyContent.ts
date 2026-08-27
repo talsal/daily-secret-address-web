@@ -58,6 +58,9 @@ const MONTH_PASUK: Record<string, string> = {
 	Elul: 'וּצְדָקָה תִּהְיֶה לָּנוּ כִּי',
 };
 
+// חודשים שבהם הצירוף נלקח מהאות האחרונה של כל מילה (סופי תיבות), לא הראשונה
+const SUFFIX_MONTHS = new Set(['Tishrei', 'Tevet', 'Adar', 'Adar I', 'Adar II', 'Tamuz', 'Elul']);
+
 const ONES_SEFIRA: Record<number, string> = {
 	1: 'חכמה', 2: 'בינה', 3: 'דעת', 4: 'חסד', 5: 'גבורה', 6: 'תפארת', 7: 'נצח', 8: 'הוד', 9: 'יסוד', 0: 'מלכות',
 };
@@ -77,6 +80,7 @@ export interface DailySpiritualContent {
 	weekFace: string;
 	monthSefira: string;
 	monthPasuk: string;
+	tzerufHavaya: string;
 	yearSefira: string;
 	decadeSefira: string;
 	hundredSefira: string;
@@ -86,6 +90,7 @@ export interface DailySpiritualContent {
 	shemita: string;
 	yovel: string;
 	systemDaysLine: string;
+	systemTimesLine: string;
 }
 
 function getWeekFace(day: number): string {
@@ -124,6 +129,63 @@ function getYovel(year: number): string {
 	return 'ע״א';
 }
 
+// מחלץ אות אחת (עם ניקוד) מכל מילה בפסוק, ובונה מהן את צירוף הוי"ה של החודש.
+// פורטו מ-applyStyle/getTzerufHavaya ב-ViewController.swift. באופן לא-אינטואיטיבי
+// (אך מכוון, כך המקור): הניקוד תמיד נלקח מהאות הראשונה של המילה, גם כשהאות
+// המוצגת עצמה (isSuffix) היא האחרונה.
+const HEBREW_COMBINING_MARK = /[֑-ׇ]/;
+
+function graphemeAt(text: string, startIndex: number): string {
+	let end = startIndex + 1;
+	while (end < text.length && HEBREW_COMBINING_MARK.test(text[end])) {
+		end++;
+	}
+	return text.slice(startIndex, end);
+}
+
+function extractTzeruf(fullText: string, isSuffix: boolean): string {
+	const words = fullText.split(' ');
+	let currentPos = 0;
+	const letters: string[] = [];
+
+	for (const word of words) {
+		if (word.length > 0) {
+			let highlightLocation = currentPos;
+			if (isSuffix) {
+				highlightLocation = currentPos + word.length - 1;
+				for (let i = word.length - 1; i >= 0; i--) {
+					const code = word.charCodeAt(i);
+					if (code >= 0x05d0 && code <= 0x05ea) {
+						highlightLocation = currentPos + i;
+						break;
+					}
+				}
+			}
+
+			const chosenLetterOnly = fullText[highlightLocation] ?? '';
+			const firstLetterFull = graphemeAt(fullText, currentPos);
+
+			let letterAttr = chosenLetterOnly;
+			for (const scalar of firstLetterFull) {
+				const val = scalar.codePointAt(0)!;
+				if (val === 0x05c1 || val === 0x05c2) continue; // נקודת שין/שמאל -- מסונן
+				if (val === 0x05bc) {
+					if (chosenLetterOnly === 'ו') continue; // שורוק על וי"ו -- לא מוסיפים סימן נפרד
+					letterAttr = scalar + letterAttr;
+					continue;
+				}
+				if (val >= 0x05b0 && val <= 0x05bb) {
+					letterAttr = letterAttr + scalar;
+				}
+			}
+			letters.push(letterAttr);
+		}
+		currentPos += word.length + 1;
+	}
+
+	return letters.join('  ');
+}
+
 export function computeDailyContent(params: {
 	year: number;
 	month: string;
@@ -149,6 +211,7 @@ export function computeDailyContent(params: {
 	const monthSefira = MONTH_SEFIRA[monthForSefira] ?? '';
 	const monthEvar = MONTH_EVAR[monthForSefira] ?? '';
 	const monthPasuk = MONTH_PASUK[monthForSefira] ?? '';
+	const tzerufHavaya = monthPasuk ? extractTzeruf(monthPasuk, SUFFIX_MONTHS.has(monthForSefira)) : '';
 	const seasonMaBen = WINTER_MONTHS.has(month) ? 'מ״ה דמ״ה ומ״ה דב״ן (דז״א)' : 'ב״ן דמ״ה וב״ן דב״ן (דנוק׳)';
 
 	const yearSefira = ONES_SEFIRA[yearOnes(year)];
@@ -162,6 +225,7 @@ export function computeDailyContent(params: {
 
 	const systemDaysLine =
 		`${daySefira} ד${weekFace} ד${monthSefira} ד${seasonMaBen} ד${yearSefira} ד${decadeSefira} ד${hundredSefira} ד${thousandSefira}`;
+	const systemTimesLine = `דשנה ${shenatShemita} לשמיטה ${shemita} ליובל ${yovel}`;
 
 	return {
 		hebrewDateLine,
@@ -171,6 +235,7 @@ export function computeDailyContent(params: {
 		weekFace,
 		monthSefira,
 		monthPasuk,
+		tzerufHavaya,
 		yearSefira,
 		decadeSefira,
 		hundredSefira,
@@ -180,5 +245,6 @@ export function computeDailyContent(params: {
 		shemita,
 		yovel,
 		systemDaysLine,
+		systemTimesLine,
 	};
 }
