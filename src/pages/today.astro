@@ -27,7 +27,18 @@ import { withBase } from '../lib/url';
 			font-size: 1.5rem;
 			color: var(--gold-light);
 			text-align: center;
-			margin: 0 0 28px;
+			margin: 0 0 8px;
+		}
+		.instructions-link {
+			display: block;
+			text-align: center;
+			color: var(--text-dim);
+			font-size: 0.9rem;
+			text-decoration: underline;
+			margin-bottom: 28px;
+		}
+		.instructions-link:hover {
+			color: var(--text);
 		}
 		#loading,
 		#error {
@@ -142,6 +153,7 @@ import { withBase } from '../lib/url';
 	<div class="wrap">
 		<a class="back-link" href={withBase('')}>→ חזרה</a>
 		<h1>הכתובת היומית על פי הרש״ש</h1>
+		<a class="instructions-link" href={withBase('instructions')}>איך משתמשים בכתובת לכוונה? →</a>
 
 		<div id="loading">טוען...</div>
 		<div id="error">לא ניתן היה לטעון את התאריך העברי. נסו לרענן את העמוד.</div>
