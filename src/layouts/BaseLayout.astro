@@ -1,5 +1,12 @@
 ---
 import { withBase } from '../lib/url';
+// גופן מוטבע (לא תלוי במה שמותקן במכשיר) עם תמיכה מלאה בניקוד עברי, כולל
+// מיצוב תקין של סימני ניקוד (GPOS mark-positioning). התקלה שהובילה לזה: על
+// אנדרואיד אין את הגופנים המקוריים (Arial Hebrew / SF Hebrew, אפל בלבד),
+// כך שהדפדפן נופל חזרה ל-sans-serif הכללי (בד"כ Roboto) שאין לו תמיכה
+// טובה בניקוד -- מה שגרם לניקוד "לרחף" בנפרד מהאות שלו בצירוף השם.
+import '@fontsource/noto-sans-hebrew/400.css';
+import '@fontsource/noto-sans-hebrew/700.css';
 
 interface Props {
 	title: string;
@@ -49,7 +56,7 @@ const ogImageUrl = new URL(withBase(ogImagePath), Astro.site).toString();
 			padding: 0;
 			background: linear-gradient(180deg, var(--navy2), var(--navy));
 			color: var(--text);
-			font-family: -apple-system, 'Arial Hebrew', 'SF Hebrew', Arial, sans-serif;
+			font-family: 'Noto Sans Hebrew', -apple-system, 'Arial Hebrew', 'SF Hebrew', Arial, sans-serif;
 			min-height: 100vh;
 			max-width: 100vw;
 			overflow-x: hidden;
