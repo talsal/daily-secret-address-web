@@ -249,8 +249,12 @@ import { withBase } from '../lib/url';
 					table.append(row);
 				}
 
-				addRow('ספירת היום', data.daySefira);
-				addRow('פרצוף השבוע', data.weekFace);
+				// כמו באפליקציה: בימי ר"ח (א'/ל') השורות הבודדות של ספירת היום/פרצוף
+				// השבוע לא מוצגות בכלל -- השורה המיוחדת של ר"ח מוצגת במקומן.
+				if (!data.roshChodeshLine) {
+					addRow('ספירת היום', data.daySefira);
+					addRow('פרצוף השבוע', data.weekFace);
+				}
 				addRow('ספירת החודש', data.monthSefira);
 				addSeasonRow(data.seasonMaBen);
 				addRow('ספירת השנה', data.yearSefira);

@@ -93,11 +93,16 @@ export interface DailySpiritualContent {
 	systemTimesLine: string;
 }
 
+// א' הוא תמיד ר"ח; משם ואילך 4 שבועות של 7 ימים כל אחד: אבא ב'-ח', אמא ט'-ט"ו,
+// ז"א ט"ז-כ"ב, נוק' כ"ג-כ"ט. ל' (בחודש מלא) אינו חלק ממחזור השבועות ונשאר עם
+// נוק' כערך הקודם, ו-א' עם אבא, כדי לשמור על התנהגות קודמת בקצוות שלא תוקנו.
 function getWeekFace(day: number): string {
-	if (day >= 1 && day <= 7) return 'אבא';
-	if (day >= 8 && day <= 14) return 'אמא';
-	if (day >= 15 && day <= 21) return 'ז״א';
-	return 'נוק׳';
+	if (day >= 2 && day <= 8) return 'אבא';
+	if (day >= 9 && day <= 15) return 'אמא';
+	if (day >= 16 && day <= 22) return 'ז״א';
+	if (day >= 23 && day <= 29) return 'נוק׳';
+	if (day === 1) return 'אבא';
+	return 'נוק׳'; // day === 30
 }
 
 function yearOnes(year: number): number {
