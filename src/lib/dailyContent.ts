@@ -192,7 +192,10 @@ function extractTzeruf(fullText: string, isSuffix: boolean): string {
 			if (val === 0x05c1 || val === 0x05c2) continue; // נקודת שין/שמאל -- מסונן
 			if (val === 0x05bc) {
 				if (chosenLetterOnly === 'ו') continue; // שורוק על וי"ו -- לא מוסיפים סימן נפרד
-				letterAttr = scalar + letterAttr;
+				// מוסיפים אחרי האות (לא לפניה) -- סימן ניקוד ללא אות בסיס לפניו הוא
+				// סדר יוניקוד לא תקני. ב-iOS זה נסלח בעת ההצגה, אבל בדפדפן אנדרואיד
+				// (בניגוד ל-iOS/Safari) זה גורם לנקודה לרחף בנפרד לפני האות.
+				letterAttr = letterAttr + scalar;
 				continue;
 			}
 			if (val >= 0x05b0 && val <= 0x05bb) {
