@@ -191,6 +191,7 @@ import { withBase } from '../lib/url';
 	<script>
 		import { fetchHebrewDate, fetchMonthForSefira } from '../lib/hebrewDate';
 		import { computeDailyContent, getPasukSegments } from '../lib/dailyContent';
+		import { resolveEffectiveNow } from '../lib/effectiveHebrewDay';
 
 		async function render() {
 			const loading = document.getElementById('loading')!;
@@ -198,7 +199,7 @@ import { withBase } from '../lib/url';
 			const content = document.getElementById('content')!;
 
 			try {
-				const now = new Date();
+				const now = await resolveEffectiveNow();
 				const hebrewDate = await fetchHebrewDate(now);
 
 				const yesterday = new Date(now);
