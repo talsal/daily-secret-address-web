@@ -3,7 +3,7 @@
 // כאן הם בכתיב של Hebcal API (Sh'vat/Cheshvan/Iyyar/Tishrei) ולא כתיב Foundation
 // (Shevat/Heshvan/Iyar/Tishri) -- ראו hebrewDate.ts.
 
-const HEBREW_DAY_LETTERS: Record<number, string> = {
+export const HEBREW_DAY_LETTERS: Record<number, string> = {
 	1: 'א', 2: 'ב', 3: 'ג', 4: 'ד', 5: 'ה', 6: 'ו', 7: 'ז', 8: 'ח', 9: 'ט', 10: 'י',
 	11: 'יא', 12: 'יב', 13: 'יג', 14: 'יד', 15: 'טו', 16: 'טז', 17: 'יז', 18: 'יח', 19: 'יט', 20: 'כ',
 	21: 'כא', 22: 'כב', 23: 'כג', 24: 'כד', 25: 'כה', 26: 'כו', 27: 'כז', 28: 'כח', 29: 'כט', 30: 'ל',
@@ -14,7 +14,7 @@ const WEEKDAY_HEBREW: Record<string, string> = {
 	Thursday: 'חמישי', Friday: 'שישי', Saturday: 'שבת',
 };
 
-const MONTH_HEBREW: Record<string, string> = {
+export const MONTH_HEBREW: Record<string, string> = {
 	Tishrei: 'תשרי', Cheshvan: 'חשון', Kislev: 'כסליו', Tevet: 'טבת',
 	"Sh'vat": 'שבט', Adar: 'אדר', 'Adar I': 'אדר א', 'Adar II': 'אדר ב',
 	Nisan: 'ניסן', Iyyar: 'אייר', Sivan: 'סיון', Tamuz: 'תמוז', Av: 'אב', Elul: 'אלול',

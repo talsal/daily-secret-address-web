@@ -45,7 +45,7 @@ import { withBase } from '../lib/url';
 			align-items: center;
 			justify-content: center;
 			gap: 8px;
-			margin-bottom: 20px;
+			margin-bottom: 10px;
 			flex-wrap: wrap;
 		}
 		.date-nav button {
@@ -60,14 +60,36 @@ import { withBase } from '../lib/url';
 		.date-nav button:hover {
 			background: rgba(255, 255, 255, 0.14);
 		}
-		.date-nav input[type='date'] {
+		.hebrew-date-picker {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+			margin-bottom: 20px;
+			flex-wrap: wrap;
+		}
+		.hebrew-date-picker select,
+		.hebrew-date-picker input[type='number'] {
 			background: rgba(255, 255, 255, 0.08);
 			border: 1px solid rgba(255, 255, 255, 0.18);
 			color: var(--text);
 			padding: 7px 10px;
 			border-radius: 10px;
-			font-size: 0.85rem;
+			font-size: 0.9rem;
 			color-scheme: dark;
+			font-family: inherit;
+		}
+		.hebrew-date-picker select {
+			min-width: 68px;
+			text-align: center;
+			text-align-last: center;
+		}
+		.hebrew-date-picker input[type='number'] {
+			width: 76px;
+			text-align: center;
+		}
+		.hebrew-date-picker input[type='number']::-webkit-inner-spin-button {
+			opacity: 0.6;
 		}
 		.today-link {
 			display: block;
@@ -200,8 +222,12 @@ import { withBase } from '../lib/url';
 
 		<div class="date-nav">
 			<button type="button" id="prevDay">‹ יום קודם</button>
-			<input type="date" id="datePicker" />
 			<button type="button" id="nextDay">יום הבא ›</button>
+		</div>
+		<div class="hebrew-date-picker">
+			<select id="daySelect" aria-label="יום"></select>
+			<select id="monthSelect" aria-label="חודש"></select>
+			<input type="number" id="yearInput" aria-label="שנה" inputmode="numeric" />
 		</div>
 		<button type="button" class="today-link" id="todayLink">חזרה להיום</button>
 
@@ -240,21 +266,77 @@ import { withBase } from '../lib/url';
 	</div>
 
 	<script>
-		import { fetchHebrewDate, fetchMonthForSefira } from '../lib/hebrewDate';
-		import { computeDailyContent, getPasukSegments } from '../lib/dailyContent';
+		import {
+			fetchHebrewDate,
+			fetchMonthForSefira,
+			getHebrewYearInfo,
+			convertHebrewToGregorian,
+			type HebrewDate,
+		} from '../lib/hebrewDate';
+		import { computeDailyContent, getPasukSegments, MONTH_HEBREW, HEBREW_DAY_LETTERS } from '../lib/dailyContent';
 		import { resolveEffectiveNow } from '../lib/effectiveHebrewDay';
 
 		let selectedDate: Date;
+		// חוסם את מאזיני ה-change בזמן שאנחנו מעדכנים את הבוררים עצמם מקוד
+		// (אחרי render), כדי לא ליצור לולאת ניווט על עדכון פרוגרמטי.
+		let syncingPickers = false;
 
-		function syncDatePicker() {
-			const input = document.getElementById('datePicker') as HTMLInputElement;
-			const y = selectedDate.getFullYear();
-			const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
-			const d = String(selectedDate.getDate()).padStart(2, '0');
-			input.value = `${y}-${m}-${d}`;
+		function populateDaySelect(dayCount: number, selectedDay: number) {
+			const select = document.getElementById('daySelect') as HTMLSelectElement;
+			select.innerHTML = '';
+			for (let d = 1; d <= dayCount; d++) {
+				const option = document.createElement('option');
+				option.value = String(d);
+				option.textContent = HEBREW_DAY_LETTERS[d] ?? String(d);
+				select.append(option);
+			}
+			select.value = String(Math.min(selectedDay, dayCount));
 		}
 
+		function populateMonthSelect(monthOrder: string[], selectedMonth: string) {
+			const select = document.getElementById('monthSelect') as HTMLSelectElement;
+			select.innerHTML = '';
+			for (const month of monthOrder) {
+				const option = document.createElement('option');
+				option.value = month;
+				option.textContent = MONTH_HEBREW[month] ?? month;
+				select.append(option);
+			}
+			// כמו באפליקציה: אם החודש הנבחר לא קיים יותר בשנה הזו (למשל "אדר ב'"
+			// בשנה שאינה מעוברת), נופלים בחזרה ל"אדר" הרגיל.
+			if (monthOrder.includes(selectedMonth)) {
+				select.value = selectedMonth;
+			} else if ((selectedMonth === 'Adar I' || selectedMonth === 'Adar II') && monthOrder.includes('Adar')) {
+				select.value = 'Adar';
+			} else {
+				select.value = monthOrder[0];
+			}
+		}
+
+		async function syncHebrewPickers(hebrewDate: HebrewDate, isStale: () => boolean) {
+			syncingPickers = true;
+			try {
+				(document.getElementById('yearInput') as HTMLInputElement).value = String(hebrewDate.year);
+				const yearInfo = await getHebrewYearInfo(hebrewDate.year);
+				if (isStale()) return;
+				populateMonthSelect(yearInfo.monthOrder, hebrewDate.month);
+				const monthSelect = document.getElementById('monthSelect') as HTMLSelectElement;
+				const dayCount = yearInfo.dayCounts[monthSelect.value] ?? 30;
+				populateDaySelect(dayCount, hebrewDate.day);
+			} finally {
+				syncingPickers = false;
+			}
+		}
+
+		// שומר על "דור" נוכחי של רינדור, כדי שאם המשתמש משנה כמה בוררים
+		// (יום/חודש/שנה) מהר ברצף, render() איטי וישן לא ידרוס תוכן שכבר
+		// עודכן ע"י render() חדש יותר שרץ אחריו (מרוץ בין קריאות אסינכרוניות).
+		let renderGeneration = 0;
+
 		async function render(date: Date) {
+			const myGeneration = ++renderGeneration;
+			const isStale = () => myGeneration !== renderGeneration;
+
 			const loading = document.getElementById('loading')!;
 			const error = document.getElementById('error')!;
 			const content = document.getElementById('content')!;
@@ -270,12 +352,17 @@ import { withBase } from '../lib/url';
 
 			try {
 				const hebrewDate = await fetchHebrewDate(date);
+				if (isStale()) return;
+				await syncHebrewPickers(hebrewDate, isStale);
+				if (isStale()) return;
 
 				const yesterday = new Date(date);
 				yesterday.setDate(yesterday.getDate() - 1);
 				const yesterdayHebrew = await fetchHebrewDate(yesterday);
+				if (isStale()) return;
 
 				const monthForSefira = await fetchMonthForSefira(date, hebrewDate);
+				if (isStale()) return;
 
 				const data = computeDailyContent({
 					year: hebrewDate.year,
@@ -360,22 +447,43 @@ import { withBase } from '../lib/url';
 
 		async function goToday() {
 			selectedDate = await resolveEffectiveNow();
-			syncDatePicker();
 			await render(selectedDate);
 		}
 
 		function goToDate(date: Date) {
 			selectedDate = date;
-			syncDatePicker();
 			render(selectedDate);
 		}
 
-		(document.getElementById('datePicker') as HTMLInputElement).addEventListener('change', (e) => {
-			const value = (e.target as HTMLInputElement).value;
-			if (!value) return;
-			const [y, m, d] = value.split('-').map(Number);
-			goToDate(new Date(y, m - 1, d, 12));
-		});
+		async function onHebrewPickerChanged() {
+			if (syncingPickers) return;
+			const yearInput = document.getElementById('yearInput') as HTMLInputElement;
+			const monthSelect = document.getElementById('monthSelect') as HTMLSelectElement;
+			const daySelect = document.getElementById('daySelect') as HTMLSelectElement;
+
+			const year = parseInt(yearInput.value, 10);
+			if (!Number.isFinite(year)) return;
+
+			// כמו באפליקציה: מוודאים שהחודש קיים בשנה הזו (נופלים ל"אדר" אם צריך)
+			// ושהיום לא חורג ממספר הימים בפועל בחודש, לפני ההמרה.
+			const yearInfo = await getHebrewYearInfo(year);
+			let month = monthSelect.value;
+			if (!yearInfo.monthOrder.includes(month)) {
+				month =
+					(month === 'Adar I' || month === 'Adar II') && yearInfo.monthOrder.includes('Adar')
+						? 'Adar'
+						: yearInfo.monthOrder[0];
+			}
+			const dayCount = yearInfo.dayCounts[month] ?? 30;
+			const day = Math.min(parseInt(daySelect.value, 10) || 1, dayCount);
+
+			const gregorian = await convertHebrewToGregorian(year, month, day);
+			goToDate(gregorian);
+		}
+
+		document.getElementById('yearInput')!.addEventListener('change', onHebrewPickerChanged);
+		document.getElementById('monthSelect')!.addEventListener('change', onHebrewPickerChanged);
+		document.getElementById('daySelect')!.addEventListener('change', onHebrewPickerChanged);
 
 		document.getElementById('prevDay')!.addEventListener('click', () => {
 			const next = new Date(selectedDate);
