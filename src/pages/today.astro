@@ -40,6 +40,50 @@ import { withBase } from '../lib/url';
 		.instructions-link:hover {
 			color: var(--text);
 		}
+		.date-nav {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			margin-bottom: 20px;
+			flex-wrap: wrap;
+		}
+		.date-nav button {
+			background: rgba(255, 255, 255, 0.08);
+			border: 1px solid rgba(255, 255, 255, 0.18);
+			color: var(--text);
+			padding: 8px 14px;
+			border-radius: 999px;
+			font-size: 0.85rem;
+			cursor: pointer;
+		}
+		.date-nav button:hover {
+			background: rgba(255, 255, 255, 0.14);
+		}
+		.date-nav input[type='date'] {
+			background: rgba(255, 255, 255, 0.08);
+			border: 1px solid rgba(255, 255, 255, 0.18);
+			color: var(--text);
+			padding: 7px 10px;
+			border-radius: 10px;
+			font-size: 0.85rem;
+			color-scheme: dark;
+		}
+		.today-link {
+			display: block;
+			text-align: center;
+			color: var(--text-dim);
+			font-size: 0.82rem;
+			text-decoration: underline;
+			margin: -12px 0 24px;
+			cursor: pointer;
+			background: none;
+			border: none;
+			width: 100%;
+		}
+		.today-link:hover {
+			color: var(--text);
+		}
 		#loading,
 		#error {
 			text-align: center;
@@ -154,6 +198,13 @@ import { withBase } from '../lib/url';
 		<h1>הכתובת היומית על פי הרש״ש</h1>
 		<a class="instructions-link" href={withBase('instructions')}>איך משתמשים בכתובת לכוונה? →</a>
 
+		<div class="date-nav">
+			<button type="button" id="prevDay">‹ יום קודם</button>
+			<input type="date" id="datePicker" />
+			<button type="button" id="nextDay">יום הבא ›</button>
+		</div>
+		<button type="button" class="today-link" id="todayLink">חזרה להיום</button>
+
 		<div id="loading">טוען...</div>
 		<div id="error">לא ניתן היה לטעון את התאריך העברי. נסו לרענן את העמוד.</div>
 
@@ -193,20 +244,38 @@ import { withBase } from '../lib/url';
 		import { computeDailyContent, getPasukSegments } from '../lib/dailyContent';
 		import { resolveEffectiveNow } from '../lib/effectiveHebrewDay';
 
-		async function render() {
+		let selectedDate: Date;
+
+		function syncDatePicker() {
+			const input = document.getElementById('datePicker') as HTMLInputElement;
+			const y = selectedDate.getFullYear();
+			const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+			const d = String(selectedDate.getDate()).padStart(2, '0');
+			input.value = `${y}-${m}-${d}`;
+		}
+
+		async function render(date: Date) {
 			const loading = document.getElementById('loading')!;
 			const error = document.getElementById('error')!;
 			const content = document.getElementById('content')!;
 
-			try {
-				const now = await resolveEffectiveNow();
-				const hebrewDate = await fetchHebrewDate(now);
+			loading.style.display = 'block';
+			error.style.display = 'none';
+			content.style.display = 'none';
 
-				const yesterday = new Date(now);
+			// מנקים תוכן דינמי משיוך הרינדור הקודם (השורות/הפסוק נבנים מחדש בכל render)
+			(document.getElementById('pasukLine') as HTMLElement).innerHTML = '';
+			(document.getElementById('sefirotTable') as HTMLElement).innerHTML = '';
+			(document.getElementById('roshChodeshCard') as HTMLElement).style.display = 'none';
+
+			try {
+				const hebrewDate = await fetchHebrewDate(date);
+
+				const yesterday = new Date(date);
 				yesterday.setDate(yesterday.getDate() - 1);
 				const yesterdayHebrew = await fetchHebrewDate(yesterday);
 
-				const monthForSefira = await fetchMonthForSefira(now, hebrewDate);
+				const monthForSefira = await fetchMonthForSefira(date, hebrewDate);
 
 				const data = computeDailyContent({
 					year: hebrewDate.year,
@@ -289,6 +358,41 @@ import { withBase } from '../lib/url';
 			}
 		}
 
-		render();
+		async function goToday() {
+			selectedDate = await resolveEffectiveNow();
+			syncDatePicker();
+			await render(selectedDate);
+		}
+
+		function goToDate(date: Date) {
+			selectedDate = date;
+			syncDatePicker();
+			render(selectedDate);
+		}
+
+		(document.getElementById('datePicker') as HTMLInputElement).addEventListener('change', (e) => {
+			const value = (e.target as HTMLInputElement).value;
+			if (!value) return;
+			const [y, m, d] = value.split('-').map(Number);
+			goToDate(new Date(y, m - 1, d, 12));
+		});
+
+		document.getElementById('prevDay')!.addEventListener('click', () => {
+			const next = new Date(selectedDate);
+			next.setDate(next.getDate() - 1);
+			goToDate(next);
+		});
+
+		document.getElementById('nextDay')!.addEventListener('click', () => {
+			const next = new Date(selectedDate);
+			next.setDate(next.getDate() + 1);
+			goToDate(next);
+		});
+
+		document.getElementById('todayLink')!.addEventListener('click', () => {
+			goToday();
+		});
+
+		goToday();
 	</script>
 </BaseLayout>
