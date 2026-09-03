@@ -84,12 +84,8 @@ import { withBase } from '../lib/url';
 			text-align: center;
 			text-align-last: center;
 		}
-		.hebrew-date-picker input[type='number'] {
-			width: 76px;
-			text-align: center;
-		}
-		.hebrew-date-picker input[type='number']::-webkit-inner-spin-button {
-			opacity: 0.6;
+		.hebrew-date-picker select#yearSelect {
+			min-width: 78px;
 		}
 		.today-link {
 			display: block;
@@ -227,7 +223,7 @@ import { withBase } from '../lib/url';
 		<div class="hebrew-date-picker">
 			<select id="daySelect" aria-label="יום"></select>
 			<select id="monthSelect" aria-label="חודש"></select>
-			<input type="number" id="yearInput" aria-label="שנה" inputmode="numeric" />
+			<select id="yearSelect" aria-label="שנה"></select>
 		</div>
 		<button type="button" class="today-link" id="todayLink">חזרה להיום</button>
 
@@ -275,6 +271,12 @@ import { withBase } from '../lib/url';
 		} from '../lib/hebrewDate';
 		import { computeDailyContent, getPasukSegments, MONTH_HEBREW, HEBREW_DAY_LETTERS } from '../lib/dailyContent';
 		import { resolveEffectiveNow } from '../lib/effectiveHebrewDay';
+		import { hebrewYearGematria } from '../lib/hebrewNumerals';
+
+		// טווח השנים המוצג בבורר -- רחב מספיק לצפייה בעבר (יארצייטים וכו') ובעתיד,
+		// וממורכז מחדש סביב השנה הנבחרת בכל render כדי שתמיד תופיע ברשימה.
+		const YEARS_BACK = 100;
+		const YEARS_FORWARD = 30;
 
 		let selectedDate: Date;
 		// חוסם את מאזיני ה-change בזמן שאנחנו מעדכנים את הבוררים עצמם מקוד
@@ -313,10 +315,22 @@ import { withBase } from '../lib/url';
 			}
 		}
 
+		function populateYearSelect(selectedYear: number) {
+			const select = document.getElementById('yearSelect') as HTMLSelectElement;
+			select.innerHTML = '';
+			for (let y = selectedYear + YEARS_FORWARD; y >= selectedYear - YEARS_BACK; y--) {
+				const option = document.createElement('option');
+				option.value = String(y);
+				option.textContent = hebrewYearGematria(y);
+				select.append(option);
+			}
+			select.value = String(selectedYear);
+		}
+
 		async function syncHebrewPickers(hebrewDate: HebrewDate, isStale: () => boolean) {
 			syncingPickers = true;
 			try {
-				(document.getElementById('yearInput') as HTMLInputElement).value = String(hebrewDate.year);
+				populateYearSelect(hebrewDate.year);
 				const yearInfo = await getHebrewYearInfo(hebrewDate.year);
 				if (isStale()) return;
 				populateMonthSelect(yearInfo.monthOrder, hebrewDate.month);
@@ -457,11 +471,11 @@ import { withBase } from '../lib/url';
 
 		async function onHebrewPickerChanged() {
 			if (syncingPickers) return;
-			const yearInput = document.getElementById('yearInput') as HTMLInputElement;
+			const yearSelect = document.getElementById('yearSelect') as HTMLSelectElement;
 			const monthSelect = document.getElementById('monthSelect') as HTMLSelectElement;
 			const daySelect = document.getElementById('daySelect') as HTMLSelectElement;
 
-			const year = parseInt(yearInput.value, 10);
+			const year = parseInt(yearSelect.value, 10);
 			if (!Number.isFinite(year)) return;
 
 			// כמו באפליקציה: מוודאים שהחודש קיים בשנה הזו (נופלים ל"אדר" אם צריך)
@@ -481,7 +495,7 @@ import { withBase } from '../lib/url';
 			goToDate(gregorian);
 		}
 
-		document.getElementById('yearInput')!.addEventListener('change', onHebrewPickerChanged);
+		document.getElementById('yearSelect')!.addEventListener('change', onHebrewPickerChanged);
 		document.getElementById('monthSelect')!.addEventListener('change', onHebrewPickerChanged);
 		document.getElementById('daySelect')!.addEventListener('change', onHebrewPickerChanged);
 
