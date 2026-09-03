@@ -36,6 +36,10 @@ const ogImageUrl = new URL(withBase(ogImagePath), Astro.site).toString();
 	<title>{title}</title>
 	<meta name="description" content={description} />
 
+	<link rel="manifest" href={withBase('manifest.webmanifest')} />
+	<link rel="apple-touch-icon" href={withBase('apple-touch-icon.png')} />
+	<meta name="theme-color" content="#122240" />
+
 	<meta property="og:type" content="website" />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:title" content={title} />

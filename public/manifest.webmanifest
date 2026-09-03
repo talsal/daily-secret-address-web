@@ -1,0 +1,27 @@
+{
+	"name": "הכתובת היומית על פי הרש\"ש",
+	"short_name": "הכתובת היומית",
+	"description": "הכתובת הקבלית של היום - ספירות, פרצוף השבוע, מקום עמידתו וצירוף ההוי\"ה, לפי כתבי הרש\"ש.",
+	"start_url": "/daily-secret-address-web/today",
+	"scope": "/daily-secret-address-web/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"lang": "he",
+	"dir": "rtl",
+	"background_color": "#0a1428",
+	"theme_color": "#122240",
+	"icons": [
+		{
+			"src": "/daily-secret-address-web/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any"
+		},
+		{
+			"src": "/daily-secret-address-web/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any"
+		}
+	]
+}
