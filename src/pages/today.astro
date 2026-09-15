@@ -227,10 +227,10 @@ import { withBase } from '../lib/url';
 		</div>
 		<button type="button" class="today-link" id="todayLink">חזרה להיום</button>
 
-		<div id="loading">טוען...</div>
-		<div id="error">לא ניתן היה לטעון את התאריך העברי. נסו לרענן את העמוד.</div>
+		<div id="loading" role="status" aria-live="polite">טוען...</div>
+		<div id="error" role="alert">לא ניתן היה לטעון את התאריך העברי. נסו לרענן את העמוד.</div>
 
-		<div id="content">
+		<div id="content" aria-live="polite">
 			<div class="card">
 				<div class="date-line" id="dateLine"></div>
 				<div class="evar-line" id="evarLine"></div>
