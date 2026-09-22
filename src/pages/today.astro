@@ -386,7 +386,7 @@ import { withBase } from '../lib/url';
 			if (month === 'Nisan' && day >= 15 && day <= 22) return reducedChagGadol('חסד', 'פסח');
 			if (month === 'Sivan' && day >= 6 && day <= 7) return reducedChagGadol('תפארת', 'שבועות');
 			if (month === 'Av' && day === 15) return reducedChagGadol('יסוד', 'ט״ו באב');
-			if ((month === 'Adar' || month === 'Adar II') && day === 14) return reducedChagGadol('נצח', 'פורים');
+			if ((month === 'Adar' || month === 'Adar II') && (day === 14 || day === 15)) return reducedChagGadol('נצח', 'פורים');
 			if (month === 'Kislev' && day >= 25) return reducedChagGadol('הוד', 'חנוכה');
 			if (month === 'Tevet') {
 				const yearInfo = await getHebrewYearInfo(year);
