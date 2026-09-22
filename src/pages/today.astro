@@ -523,7 +523,7 @@ import { withBase } from '../lib/url';
 						}
 
 						const line3 =
-							`ד${data.yearSefira} ד${data.decadeSefira} ד${data.hundredSefira} ד${data.thousandSefira} ${hebrewDate.year}`;
+							`ד${data.yearSefira} ד${data.decadeSefira} ד${data.hundredSefira} ד${data.thousandSefira} ${hebrewYearGematria(hebrewDate.year)}`;
 						(document.getElementById('zmanimGadolLine3') as HTMLElement).textContent = line3;
 
 						(document.getElementById('zmanimGadolCard') as HTMLElement).style.display = 'block';
