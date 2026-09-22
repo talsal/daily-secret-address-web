@@ -170,6 +170,13 @@ import { withBase } from '../lib/url';
 			color: var(--gold-light);
 			margin: 4px 0;
 		}
+		.neshama-image {
+			display: block;
+			width: 100%;
+			height: auto;
+			border-radius: 8px;
+			background: #ffffff;
+		}
 		/* :global() -- .sefira-row/.season-row/.label/.value are created at runtime via
 		   document.createElement in the client script below, not present in this
 		   component's template at build time, so Astro's automatic style scoping
@@ -247,6 +254,11 @@ import { withBase } from '../lib/url';
 				<div class="rosh-chodesh" id="roshChodeshLine"></div>
 			</div>
 
+			<div class="card" id="neshamaCard" style="display: none">
+				<h2>המשכת אור פנימי (י״א–ט״ו בתשרי)</h2>
+				<img id="neshamaImage" class="neshama-image" alt="המשכת אור פנימי ליום זה" />
+			</div>
+
 			<div class="card" id="sefirotTable"></div>
 
 			<div class="card">
@@ -272,6 +284,12 @@ import { withBase } from '../lib/url';
 		import { computeDailyContent, getPasukSegments, MONTH_HEBREW, HEBREW_DAY_LETTERS } from '../lib/dailyContent';
 		import { resolveEffectiveNow } from '../lib/effectiveHebrewDay';
 		import { hebrewYearGematria } from '../lib/hebrewNumerals';
+		import { withBase } from '../lib/url';
+
+		// בין יו"כ לסוכות: מיום י"א עד ט"ו בתשרי יש להמשיך אור פנימי מיוחד בכל יום
+		// (ראה שער הכוונות). מוצג כתמונה סרוקה מתוך הספר ולא כטקסט מוקלד, כדי
+		// למנוע טעויות תעתוק בתוכן קבלי רגיש.
+		const NESHAMA_DAYS = new Set([11, 12, 13, 14, 15]);
 
 		// טווח השנים המוצג בבורר -- רחב מספיק לצפייה בעבר (יארצייטים וכו') ובעתיד,
 		// וממורכז מחדש סביב השנה הנבחרת בכל render כדי שתמיד תופיע ברשימה.
@@ -363,6 +381,7 @@ import { withBase } from '../lib/url';
 			(document.getElementById('pasukLine') as HTMLElement).innerHTML = '';
 			(document.getElementById('sefirotTable') as HTMLElement).innerHTML = '';
 			(document.getElementById('roshChodeshCard') as HTMLElement).style.display = 'none';
+			(document.getElementById('neshamaCard') as HTMLElement).style.display = 'none';
 
 			try {
 				const hebrewDate = await fetchHebrewDate(date);
@@ -407,6 +426,12 @@ import { withBase } from '../lib/url';
 				if (data.roshChodeshLine) {
 					(document.getElementById('roshChodeshLine') as HTMLElement).textContent = data.roshChodeshLine;
 					(document.getElementById('roshChodeshCard') as HTMLElement).style.display = 'block';
+				}
+
+				if (hebrewDate.month === 'Tishrei' && NESHAMA_DAYS.has(hebrewDate.day)) {
+					const img = document.getElementById('neshamaImage') as HTMLImageElement;
+					img.src = withBase(`kavanot/tishrei-${hebrewDate.day}.png`);
+					(document.getElementById('neshamaCard') as HTMLElement).style.display = 'block';
 				}
 
 				const table = document.getElementById('sefirotTable')!;
