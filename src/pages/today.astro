@@ -351,7 +351,7 @@ import { withBase } from '../lib/url';
 		const TISHREI_CHAG_GADOL: Record<number, ChagGadolContent> = {
 			1: {
 				sefirah: 'גבורה',
-				chagName: 'חג תשרי',
+				chagName: 'חגי תשרי',
 				line1Suffix: 'כח״ב (ג״ר דכללות השנה)',
 				dayLabel: 'פנימיות',
 				line2Phrase: 'דמ״ה דמ״ה ודמ״ה דב״ן, ודב״ן דמ״ה ודב״ן דב״ן',
@@ -381,7 +381,7 @@ import { withBase } from '../lib/url';
 		async function getChagGadolContent(month: string, day: number, year: number): Promise<ChagGadolContent | null> {
 			if (month === 'Tishrei') {
 				if (day < 1 || day > 23) return null;
-				return TISHREI_CHAG_GADOL[day] ?? reducedChagGadol('גבורה', 'חג תשרי');
+				return TISHREI_CHAG_GADOL[day] ?? reducedChagGadol('גבורה', 'חגי תשרי');
 			}
 			if (month === 'Nisan' && day >= 15 && day <= 22) return reducedChagGadol('חסד', 'פסח');
 			if (month === 'Sivan' && day >= 6 && day <= 7) return reducedChagGadol('תפארת', 'שבועות');
