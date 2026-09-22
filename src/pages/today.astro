@@ -170,6 +170,16 @@ import { withBase } from '../lib/url';
 			color: var(--gold-light);
 			margin: 4px 0;
 		}
+		.zmanim-gadol-line {
+			text-align: center;
+			font-size: 0.95rem;
+			line-height: 1.9;
+			color: var(--text-dim);
+		}
+		.zmanim-gadol-line.line1 {
+			color: var(--text);
+			font-weight: 700;
+		}
 		.neshama-title {
 			text-align: center;
 			font-weight: 700;
@@ -268,6 +278,13 @@ import { withBase } from '../lib/url';
 				<div class="rosh-chodesh" id="roshChodeshLine"></div>
 			</div>
 
+			<div class="card" id="zmanimGadolCard" style="display: none">
+				<h2>מערכת זמנים גדול (חגים)</h2>
+				<div class="zmanim-gadol-line line1" id="zmanimGadolLine1"></div>
+				<div class="zmanim-gadol-line line2" id="zmanimGadolLine2" style="display: none"></div>
+				<div class="zmanim-gadol-line line3" id="zmanimGadolLine3"></div>
+			</div>
+
 			<div class="card" id="neshamaCard" style="display: none">
 				<h2>המשכת אור פנימי (י״א–ט״ו בתשרי)</h2>
 				<p class="neshama-title">
@@ -318,6 +335,40 @@ import { withBase } from '../lib/url';
 		// (ראה שער הכוונות). מוצג כתמונה סרוקה מתוך הספר ולא כטקסט מוקלד, כדי
 		// למנוע טעויות תעתוק בתוכן קבלי רגיש.
 		const NESHAMA_DAYS = new Set([11, 12, 13, 14, 15]);
+
+		// מערכת זמנים גדול (חגים): מראש השנה ועד סוף סוכות (א'-כ"ג בתשרי) הספירה
+		// היא גבורה. לימי ר"ה עצמם (א'-ב') יש נוסח מלא עם כח"ב/מ"ה-ב"ן/פנימיות-
+		// חיצוניות; לשאר הימים (כולל יוה"כ וסוכות, עד שיימסר הנוסח המלא שלהם) יש
+		// רק נוסח מצומצם -- ספירה ושם החג, בלי כח"ב ובלי שורה 2.
+		interface ChagGadolContent {
+			sefirah: string;
+			chagName: string;
+			line1Suffix?: string;
+			dayLabel?: string;
+			line2Phrase?: string;
+		}
+
+		const TISHREI_CHAG_GADOL: Record<number, ChagGadolContent> = {
+			1: {
+				sefirah: 'גבורה',
+				chagName: 'חג תשרי',
+				line1Suffix: 'כח״ב (ג״ר דכללות השנה)',
+				dayLabel: 'פנימיות',
+				line2Phrase: 'דמ״ה דמ״ה ודמ״ה דב״ן, ודב״ן דמ״ה ודב״ן דב״ן',
+			},
+			2: {
+				sefirah: 'גבורה',
+				chagName: 'ר״ה',
+				line1Suffix: 'כח״ב (ג״ר דכללות השנה)',
+				dayLabel: 'חיצוניות',
+				line2Phrase: 'דמ״ה דמ״ה ודמ״ה דב״ן, ודב״ן דמ״ה ודב״ן דב״ן',
+			},
+		};
+
+		function getChagGadolContent(day: number): ChagGadolContent | null {
+			if (day < 1 || day > 23) return null;
+			return TISHREI_CHAG_GADOL[day] ?? { sefirah: 'גבורה', chagName: 'חג תשרי' };
+		}
 
 		// טווח השנים המוצג בבורר -- רחב מספיק לצפייה בעבר (יארצייטים וכו') ובעתיד,
 		// וממורכז מחדש סביב השנה הנבחרת בכל render כדי שתמיד תופיע ברשימה.
@@ -409,6 +460,8 @@ import { withBase } from '../lib/url';
 			(document.getElementById('pasukLine') as HTMLElement).innerHTML = '';
 			(document.getElementById('sefirotTable') as HTMLElement).innerHTML = '';
 			(document.getElementById('roshChodeshCard') as HTMLElement).style.display = 'none';
+			(document.getElementById('zmanimGadolCard') as HTMLElement).style.display = 'none';
+			(document.getElementById('zmanimGadolLine2') as HTMLElement).style.display = 'none';
 			(document.getElementById('neshamaCard') as HTMLElement).style.display = 'none';
 
 			try {
@@ -454,6 +507,27 @@ import { withBase } from '../lib/url';
 				if (data.roshChodeshLine) {
 					(document.getElementById('roshChodeshLine') as HTMLElement).textContent = data.roshChodeshLine;
 					(document.getElementById('roshChodeshCard') as HTMLElement).style.display = 'block';
+				}
+
+				if (hebrewDate.month === 'Tishrei') {
+					const chagGadol = getChagGadolContent(hebrewDate.day);
+					if (chagGadol) {
+						let line1 = `א״ק ואבי״ע ד${chagGadol.sefirah} (${chagGadol.chagName})`;
+						if (chagGadol.line1Suffix) line1 += `, ד${chagGadol.line1Suffix}`;
+						(document.getElementById('zmanimGadolLine1') as HTMLElement).textContent = line1;
+
+						const line2El = document.getElementById('zmanimGadolLine2') as HTMLElement;
+						if (chagGadol.dayLabel && chagGadol.line2Phrase) {
+							line2El.textContent = `*ד${chagGadol.dayLabel}: ${chagGadol.line2Phrase}`;
+							line2El.style.display = 'block';
+						}
+
+						const line3 =
+							`ד${data.yearSefira} ד${data.decadeSefira} ד${data.hundredSefira} ד${data.thousandSefira} ${hebrewDate.year}`;
+						(document.getElementById('zmanimGadolLine3') as HTMLElement).textContent = line3;
+
+						(document.getElementById('zmanimGadolCard') as HTMLElement).style.display = 'block';
+					}
 				}
 
 				if (hebrewDate.month === 'Tishrei' && NESHAMA_DAYS.has(hebrewDate.day)) {
