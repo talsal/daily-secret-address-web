@@ -365,9 +365,35 @@ import { withBase } from '../lib/url';
 			},
 		};
 
-		function getChagGadolContent(day: number): ChagGadolContent | null {
-			if (day < 1 || day > 23) return null;
-			return TISHREI_CHAG_GADOL[day] ?? { sefirah: 'גבורה', chagName: 'חג תשרי' };
+		// שאר החגים: עד שיימסר הנוסח המלא (כח"ב/מ"ה-ב"ן) לכל אחד מהם, כמו שכבר
+		// נמסר לר"ה -- מוצג נוסח מצומצם: רק ספירה ושם החג.
+		function reducedChagGadol(sefirah: string, chagName: string): ChagGadolContent {
+			return { sefirah, chagName };
+		}
+
+		// חנוכה חוצה חודשים (כ"ה בכסלו ועוד 7 ימים) ואורך כסלו משתנה בין שנים
+		// (כ"ט או ל'), כך שהיום האחרון בטבת (ב' או ג') תלוי בשנה הספציפית.
+		function chanukahDaysInTevet(kislevLength: number): number {
+			const daysInKislev = kislevLength - 25 + 1; // ימי כסלו שנחגגו: כ"ה עד סוף החודש
+			return 8 - daysInKislev;
+		}
+
+		async function getChagGadolContent(month: string, day: number, year: number): Promise<ChagGadolContent | null> {
+			if (month === 'Tishrei') {
+				if (day < 1 || day > 23) return null;
+				return TISHREI_CHAG_GADOL[day] ?? reducedChagGadol('גבורה', 'חג תשרי');
+			}
+			if (month === 'Nisan' && day >= 15 && day <= 22) return reducedChagGadol('חסד', 'פסח');
+			if (month === 'Sivan' && day >= 6 && day <= 7) return reducedChagGadol('תפארת', 'שבועות');
+			if (month === 'Av' && day === 15) return reducedChagGadol('יסוד', 'ט״ו באב');
+			if ((month === 'Adar' || month === 'Adar II') && day === 14) return reducedChagGadol('נצח', 'פורים');
+			if (month === 'Kislev' && day >= 25) return reducedChagGadol('הוד', 'חנוכה');
+			if (month === 'Tevet') {
+				const yearInfo = await getHebrewYearInfo(year);
+				const kislevLength = yearInfo.dayCounts['Kislev'] ?? 30;
+				if (day >= 1 && day <= chanukahDaysInTevet(kislevLength)) return reducedChagGadol('הוד', 'חנוכה');
+			}
+			return null;
 		}
 
 		// טווח השנים המוצג בבורר -- רחב מספיק לצפייה בעבר (יארצייטים וכו') ובעתיד,
@@ -509,8 +535,9 @@ import { withBase } from '../lib/url';
 					(document.getElementById('roshChodeshCard') as HTMLElement).style.display = 'block';
 				}
 
-				if (hebrewDate.month === 'Tishrei') {
-					const chagGadol = getChagGadolContent(hebrewDate.day);
+				{
+					const chagGadol = await getChagGadolContent(hebrewDate.month, hebrewDate.day, hebrewDate.year);
+					if (isStale()) return;
 					if (chagGadol) {
 						let line1 = `א״ק ואבי״ע ד${chagGadol.sefirah} (${chagGadol.chagName})`;
 						if (chagGadol.line1Suffix) line1 += `, ד${chagGadol.line1Suffix}`;
