@@ -3,6 +3,8 @@
 // כאן הם בכתיב של Hebcal API (Sh'vat/Cheshvan/Iyyar/Tishrei) ולא כתיב Foundation
 // (Shevat/Heshvan/Iyar/Tishri) -- ראו hebrewDate.ts.
 
+import { hebrewYearGematria } from './hebrewNumerals';
+
 export const HEBREW_DAY_LETTERS: Record<number, string> = {
 	1: 'א', 2: 'ב', 3: 'ג', 4: 'ד', 5: 'ה', 6: 'ו', 7: 'ז', 8: 'ח', 9: 'ט', 10: 'י',
 	11: 'יא', 12: 'יב', 13: 'יג', 14: 'יד', 15: 'טו', 16: 'טז', 17: 'יז', 18: 'יח', 19: 'יט', 20: 'כ',
@@ -249,7 +251,7 @@ export function computeDailyContent(params: {
 	const { year, month, day, weekday, monthForSefira, yesterdayDay } = params;
 
 	const hebDayLetter = HEBREW_DAY_LETTERS[day] ?? '?';
-	const hebrewDateLine = `שנת ${year} ${hebDayLetter} ${MONTH_HEBREW[month] ?? month} יום ${WEEKDAY_HEBREW[weekday] ?? weekday}`;
+	const hebrewDateLine = `שנת ${hebrewYearGematria(year)} ${hebDayLetter} ${MONTH_HEBREW[month] ?? month} יום ${WEEKDAY_HEBREW[weekday] ?? weekday}`;
 
 	let roshChodeshLine: string | null = null;
 	if (hebDayLetter === 'ל') {
