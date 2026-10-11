@@ -181,34 +181,55 @@ function computeHighlightLocations(fullText: string, isSuffix: boolean): { wordS
 	return result;
 }
 
-function extractTzerufLetters(fullText: string, isSuffix: boolean): string[] {
+interface TzerufPart {
+	letter: string;
+	marks: string;
+	shuruk: boolean;
+}
+
+// שורוק (וי"ו מנוקדת בדגש) באות הראשונה של המילה מוצג בצירוף כ-"וּ" מלאה:
+// האות עצמה אם היא ו', ואחרת האות הנבחרת ואחריה וּ (למשל הוּ) -- לא כדגש בודד.
+function extractTzerufParts(fullText: string, isSuffix: boolean): TzerufPart[] {
 	const locations = computeHighlightLocations(fullText, isSuffix);
-	const letters: string[] = [];
+	const parts: TzerufPart[] = [];
 
 	for (const { wordStart, highlightLocation } of locations) {
-		const chosenLetterOnly = fullText[highlightLocation] ?? '';
+		const letter = fullText[highlightLocation] ?? '';
 		const firstLetterFull = graphemeAt(fullText, wordStart);
+		const firstIsVav = firstLetterFull[0] === 'ו';
 
-		let letterAttr = chosenLetterOnly;
+		let marks = '';
+		let shuruk = false;
 		for (const scalar of firstLetterFull) {
 			const val = scalar.codePointAt(0)!;
 			if (val === 0x05c1 || val === 0x05c2) continue; // נקודת שין/שמאל -- מסונן
 			if (val === 0x05bc) {
-				if (chosenLetterOnly === 'ו') continue; // שורוק על וי"ו -- לא מוסיפים סימן נפרד
+				if (firstIsVav) {
+					shuruk = true;
+					continue;
+				}
+				if (letter === 'ו') continue; // דגש רגיל על וי"ו נבחרת -- לא מוסיפים סימן נפרד
 				// מוסיפים אחרי האות (לא לפניה) -- סימן ניקוד ללא אות בסיס לפניו הוא
 				// סדר יוניקוד לא תקני. ב-iOS זה נסלח בעת ההצגה, אבל בדפדפן אנדרואיד
 				// (בניגוד ל-iOS/Safari) זה גורם לנקודה לרחף בנפרד לפני האות.
-				letterAttr = letterAttr + scalar;
+				marks += scalar;
 				continue;
 			}
 			if (val >= 0x05b0 && val <= 0x05bb) {
-				letterAttr = letterAttr + scalar;
+				marks += scalar;
 			}
 		}
-		letters.push(letterAttr);
+		parts.push({ letter, marks, shuruk });
 	}
 
-	return letters;
+	return parts;
+}
+
+const SHURUK_VAV = '\u05d5\u05bc';
+
+function renderTzerufPart(letter: string, part: TzerufPart): string {
+	if (!part.shuruk) return letter + part.marks;
+	return letter === 'ו' ? SHURUK_VAV : letter + part.marks + SHURUK_VAV;
 }
 
 // צירוף שם אהיה לכל חודש (אותיות א-ה-י-ה בסדר המתאים לחודש). הניקוד של כל אות
@@ -219,11 +240,12 @@ const EHYEH_TZERUF: Record<string, string> = {
 	Adar: 'ההאי', 'Adar I': 'ההאי', 'Adar II': 'ההאי',
 };
 
-function extractEhyehTzeruf(monthForSefira: string, havayaLetters: string[]): string {
+function extractEhyehTzeruf(monthForSefira: string, parts: TzerufPart[]): string {
 	const ehyeh = EHYEH_TZERUF[monthForSefira];
 	if (!ehyeh) return '';
-	const base = Array.from(ehyeh);
-	return base.map((letter, i) => letter + (havayaLetters[i] ?? '').slice(1)).join('  ');
+	return Array.from(ehyeh)
+		.map((letter, i) => (parts[i] ? renderTzerufPart(letter, parts[i]) : letter))
+		.join('  ');
 }
 
 export interface PasukSegment {
@@ -281,9 +303,9 @@ export function computeDailyContent(params: {
 	const monthSefira = MONTH_SEFIRA[monthForSefira] ?? '';
 	const monthEvar = MONTH_EVAR[monthForSefira] ?? '';
 	const monthPasuk = MONTH_PASUK[monthForSefira] ?? '';
-	const havayaLetters = monthPasuk ? extractTzerufLetters(monthPasuk, SUFFIX_MONTHS.has(monthForSefira)) : [];
-	const tzerufHavaya = havayaLetters.join('  ');
-	const tzerufEhyeh = extractEhyehTzeruf(monthForSefira, havayaLetters);
+	const tzerufParts = monthPasuk ? extractTzerufParts(monthPasuk, SUFFIX_MONTHS.has(monthForSefira)) : [];
+	const tzerufHavaya = tzerufParts.map((part) => renderTzerufPart(part.letter, part)).join('  ');
+	const tzerufEhyeh = extractEhyehTzeruf(monthForSefira, tzerufParts);
 	const seasonMaBen = WINTER_MONTHS.has(month) ? 'מ״ה דמ״ה ומ״ה דב״ן (דז״א)' : 'ב״ן דמ״ה וב״ן דב״ן (דנוק׳)';
 
 	const yearSefira = ONES_SEFIRA[yearOnes(year)];
