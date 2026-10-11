@@ -187,8 +187,8 @@ interface TzerufPart {
 	shuruk: boolean;
 }
 
-// שורוק (וי"ו מנוקדת בדגש) באות הראשונה של המילה מוצג בצירוף כ-"וּ" מלאה:
-// האות עצמה אם היא ו', ואחרת האות הנבחרת ואחריה וּ (למשל הוּ) -- לא כדגש בודד.
+// שורוק (וי"ו מנוקדת בדגש) באות הראשונה של המילה מוצג בצירוף כאות הנבחרת ואחריה
+// וּ מלאה (למשל הוּ, ווּ) -- לא כדגש בודד על האות.
 function extractTzerufParts(fullText: string, isSuffix: boolean): TzerufPart[] {
 	const locations = computeHighlightLocations(fullText, isSuffix);
 	const parts: TzerufPart[] = [];
@@ -229,7 +229,7 @@ const SHURUK_VAV = '\u05d5\u05bc';
 
 function renderTzerufPart(letter: string, part: TzerufPart): string {
 	if (!part.shuruk) return letter + part.marks;
-	return letter === 'ו' ? SHURUK_VAV : letter + part.marks + SHURUK_VAV;
+	return letter + part.marks + SHURUK_VAV;
 }
 
 // צירוף שם אהיה לכל חודש (אותיות א-ה-י-ה בסדר המתאים לחודש). הניקוד של כל אות
