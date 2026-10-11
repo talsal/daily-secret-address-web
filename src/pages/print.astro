@@ -9,7 +9,7 @@ import { withBase } from '../lib/url';
 >
 	<style is:global>
 		.wrap {
-			max-width: 900px;
+			max-width: 1160px;
 			margin: 0 auto;
 			padding: 40px 20px 96px;
 		}
@@ -79,74 +79,81 @@ import { withBase } from '../lib/url';
 			margin: 20px 0;
 		}
 
-		/* הגיליון עצמו: נייר לבן עם טקסט כהה -- זהה במסך ובהדפסה */
+		/* הגיליון עצמו: נייר לבן עם טקסט כהה -- זהה במסך ובהדפסה. הרוחב קבוע לפי גודל
+		   עמוד A4 (חודש: לרוחב, שבוע: לאורך) כדי שהמסך יראה בדיוק מה שיודפס. */
+		.sheet-scroll {
+			overflow-x: auto;
+		}
 		.sheet {
+			box-sizing: border-box;
 			background: #fff;
 			color: #111;
 			border-radius: 8px;
-			padding: 22px 20px;
-			font-size: 0.95rem;
-			line-height: 1.55;
+			padding: 12px;
+			margin: 0 auto;
+			line-height: 1.35;
+		}
+		.sheet.month-layout {
+			width: calc(1062px + 24px);
+			--fs: 10px;
+		}
+		.sheet.week-layout {
+			width: calc(733px + 24px);
+			--fs: 13px;
+		}
+		.sheet-main {
+			font-size: var(--fs);
 		}
 		.sheet h1 {
-			margin: 0 0 4px;
-			font-size: 1.25rem;
+			margin: 0 0 6px;
+			font-size: 1.5em;
 			text-align: center;
-		}
-		.sheet .sheet-sub {
-			text-align: center;
-			color: #555;
-			font-size: 0.85rem;
-			margin-bottom: 14px;
 		}
 		.segment {
-			margin-bottom: 26px;
+			margin-bottom: 14px;
 		}
 		.segment-title {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 6px 18px;
+			align-items: center;
 			border: 1.5px solid #333;
 			border-radius: 6px;
-			padding: 10px 12px;
-			margin-bottom: 8px;
+			padding: 6px 10px;
+			margin-bottom: 6px;
 			break-inside: avoid;
 		}
-		.segment-title h2 {
-			margin: 0 0 6px;
-			font-size: 1.15rem;
+		.title-head {
 			text-align: center;
 		}
-		.segment-title .range {
-			text-align: center;
-			color: #555;
-			font-size: 0.82rem;
-			margin-bottom: 8px;
+		.title-head h2 {
+			margin: 0 0 2px;
+			font-size: 1.6em;
 		}
-		.segment-title .pasuk {
-			text-align: center;
-			font-size: 1.1rem;
-			margin: 4px 0;
+		.title-head .pasuk {
+			font-size: 1.5em;
+			margin: 2px 0;
 		}
-		.segment-title .pasuk-highlight {
+		.title-head .pasuk-highlight {
 			color: #1565d8;
 			font-weight: 700;
-			font-size: 1.3rem;
+			font-size: 1.2em;
 		}
-		.segment-title .tzerufim {
-			text-align: center;
-			margin: 4px 0 8px;
+		.title-head .tzerufim {
+			margin: 2px 0 0;
 		}
-		.segment-title .tzeruf-letters {
+		.title-head .tzeruf-letters {
 			color: #c0392b;
-			font-size: 1.25rem;
+			font-size: 1.6em;
 		}
-		.segment-title .tzeruf-ehyeh {
-			margin-inline-start: 1.5rem;
+		.title-head .tzeruf-ehyeh {
+			margin-inline-start: 1.2em;
 		}
 		.segment-title dl {
 			display: grid;
 			grid-template-columns: max-content 1fr;
-			gap: 2px 12px;
+			gap: 1px 10px;
 			margin: 0;
-			font-size: 0.9rem;
 		}
 		.segment-title dt {
 			color: #555;
@@ -159,13 +166,12 @@ import { withBase } from '../lib/url';
 			width: 100%;
 			border-collapse: collapse;
 			table-layout: fixed;
-			font-size: 0.9rem;
 		}
 		table.days th,
 		table.days td {
 			border: 1px solid #999;
-			padding: 5px 7px;
-			vertical-align: top;
+			padding: 1.5px 5px;
+			vertical-align: middle;
 			text-align: right;
 		}
 		table.days thead th {
@@ -181,27 +187,42 @@ import { withBase } from '../lib/url';
 			break-inside: avoid;
 		}
 		table.days col.c-day {
-			width: 17%;
+			width: 11%;
 		}
 		table.days col.c-sefira {
-			width: 14%;
+			width: 9%;
 		}
 		table.days col.c-face {
-			width: 13%;
+			width: 9%;
+		}
+		table.days col.c-system {
+			width: 48%;
+		}
+		table.days col.c-chag {
+			width: 23%;
+		}
+		.week-layout table.days col.c-day {
+			width: 14%;
+		}
+		.week-layout table.days col.c-sefira,
+		.week-layout table.days col.c-face {
+			width: 12%;
+		}
+		.week-layout table.days col.c-system {
+			width: 40%;
+		}
+		.week-layout table.days col.c-chag {
+			width: 22%;
 		}
 		table.days td.day-cell .gdate {
-			display: block;
+			margin-inline-start: 6px;
 			color: #666;
-			font-size: 0.78rem;
+			font-size: 0.85em;
 		}
-		table.days tr.chag td {
+		table.days td.chag-cell {
 			background: #f6f0dc;
-			font-size: 0.85rem;
 			-webkit-print-color-adjust: exact;
 			print-color-adjust: exact;
-		}
-		table.days tr.chag td div + div {
-			margin-top: 2px;
 		}
 		table.days tr.is-rc td.day-cell {
 			font-weight: 700;
@@ -209,6 +230,7 @@ import { withBase } from '../lib/url';
 		.neshama-section {
 			margin-top: 24px;
 			break-before: page;
+			font-size: 13px;
 		}
 		.neshama-section h2 {
 			font-size: 1.1rem;
@@ -230,10 +252,6 @@ import { withBase } from '../lib/url';
 			height: auto;
 		}
 
-		@page {
-			size: A4;
-			margin: 12mm;
-		}
 		@media print {
 			html,
 			body {
@@ -249,9 +267,18 @@ import { withBase } from '../lib/url';
 				max-width: none;
 				padding: 0;
 			}
+			.sheet-scroll {
+				overflow: visible;
+			}
 			.sheet {
 				padding: 0;
 				border-radius: 0;
+			}
+			.sheet.month-layout {
+				width: 1062px;
+			}
+			.sheet.week-layout {
+				width: 733px;
 			}
 		}
 	</style>
@@ -280,7 +307,7 @@ import { withBase } from '../lib/url';
 		<div id="status" class="no-print" role="status" aria-live="polite">טוען…</div>
 		<div id="error" class="no-print" role="alert">לא ניתן היה לטעון את הנתונים. נסו לרענן את העמוד.</div>
 
-		<div class="sheet" id="sheet" style="display:none"></div>
+		<div class="sheet-scroll"><div class="sheet" id="sheet" style="display:none"></div></div>
 	</div>
 
 	<script>
@@ -318,6 +345,8 @@ import { withBase } from '../lib/url';
 		const monthSelectEl = document.getElementById('monthSelect') as HTMLSelectElement;
 		const yearSelectEl = document.getElementById('yearSelect') as HTMLSelectElement;
 		const sheet = document.getElementById('sheet') as HTMLElement;
+		const pageStyleEl = document.createElement('style');
+		document.head.append(pageStyleEl);
 		const statusEl = document.getElementById('status') as HTMLElement;
 		const errorEl = document.getElementById('error') as HTMLElement;
 
@@ -406,20 +435,22 @@ import { withBase } from '../lib/url';
 			const d = titleRow.data;
 			const box = el('section', 'segment-title');
 
-			box.append(el('h2', undefined, `${MONTH_HEBREW[titleRow.monthForSefira] ?? titleRow.monthForSefira} ${hebrewYearGematria(titleRow.hebrew.year)}`));
+			const head = el('div', 'title-head');
+			head.append(el('h2', undefined, `${MONTH_HEBREW[titleRow.monthForSefira] ?? titleRow.monthForSefira} ${hebrewYearGematria(titleRow.hebrew.year)}`));
 
 			const pasuk = el('div', 'pasuk');
 			for (const seg of getPasukSegments(titleRow.monthForSefira)) {
 				if (seg.highlighted) pasuk.append(el('span', 'pasuk-highlight', seg.text));
 				else pasuk.append(document.createTextNode(seg.text));
 			}
-			box.append(pasuk);
+			head.append(pasuk);
 
 			const tz = el('div', 'tzerufim');
 			tz.append(document.createTextNode('צירוף השם: '));
 			tz.append(el('span', 'tzeruf-letters', d.tzerufHavaya));
 			tz.append(el('span', 'tzeruf-letters tzeruf-ehyeh', d.tzerufEhyeh));
-			box.append(tz);
+			head.append(tz);
+			box.append(head);
 
 			const dl = el('dl');
 			const add = (label: string, value: string) => {
@@ -429,21 +460,31 @@ import { withBase } from '../lib/url';
 			add('ספירת החודש', d.monthSefira);
 			add('עונה', d.seasonMaBen);
 			add('ספירות השנה', `${d.yearSefira} · ${d.decadeSefira} (עשרות) · ${d.hundredSefira} (מאות) · ${d.thousandSefira} (אלף)`);
-			add('שנת שמיטה / שמיטה / יובל', `${d.shenatShemita} · ${d.shemita} · ${d.yovel}`);
+			add('שמיטה / שמיטה / יובל', `${d.shenatShemita} · ${d.shemita} · ${d.yovel}`);
 			add('מערכת זמנים קטן', d.systemTimesLine);
+			// שורת ספירות השנה של מערכת זמנים גדול זהה בכל ימי החג, ולכן מופיעה כאן פעם אחת
+			const chagRow = rows.find((r) => r.chag);
+			if (chagRow) {
+				add('מערכת זמנים גדול (שנה)', chagGadolLines(chagRow.chag!, d, hebrewYearGematria(chagRow.hebrew.year)).line3);
+			}
 			box.append(dl);
 			return box;
 		}
 
 		function buildTable(rows: DayRow[]): HTMLTableElement {
+			const hasChag = rows.some((r) => r.chag);
 			const table = el('table', 'days');
 			const colgroup = el('colgroup');
-			for (const c of ['c-day', 'c-sefira', 'c-face', 'c-system']) colgroup.append(el('col', c));
+			for (const c of hasChag ? ['c-day', 'c-sefira', 'c-face', 'c-system', 'c-chag'] : ['c-day', 'c-sefira', 'c-face', 'c-system']) {
+				colgroup.append(el('col', c));
+			}
 			table.append(colgroup);
 
 			const head = el('thead');
 			const headRow = el('tr');
-			for (const h of ['יום', 'ספירת היום', 'פרצוף השבוע', 'מערכת ימים']) headRow.append(el('th', undefined, h));
+			for (const h of hasChag ? ['יום', 'ספירת היום', 'פרצוף השבוע', 'מערכת ימים', 'מערכת זמנים גדול (חגים)'] : ['יום', 'ספירת היום', 'פרצוף השבוע', 'מערכת ימים']) {
+				headRow.append(el('th', undefined, h));
+			}
 			head.append(headRow);
 			table.append(head);
 
@@ -454,9 +495,10 @@ import { withBase } from '../lib/url';
 
 				const dayCell = el('td', 'day-cell');
 				dayCell.append(document.createTextNode(`${HEBREW_DAY_LETTERS[hebrew.day] ?? hebrew.day} · ${WEEKDAY_HEBREW[hebrew.weekday] ?? hebrew.weekday}`));
-				const notes: string[] = [];
-				if (hebrew.month !== row.monthForSefira) notes.push(MONTH_HEBREW[hebrew.month] ?? hebrew.month);
-				if (notes.length > 0) dayCell.append(el('span', 'gdate', notes.join(' · ')));
+				// יום ל' שייך לכתובת החודש הבא -- מציינים את החודש האמיתי שלו
+				if (hebrew.month !== row.monthForSefira) {
+					dayCell.append(el('span', 'gdate', MONTH_HEBREW[hebrew.month] ?? hebrew.month));
+				}
 				tr.append(dayCell);
 
 				// כמו באתר/באפליקציה: בימי ר"ח השורה המיוחדת מחליפה את ספירת היום ופרצוף השבוע
@@ -468,22 +510,20 @@ import { withBase } from '../lib/url';
 					tr.append(el('td', undefined, data.daySefira), el('td', undefined, data.weekFace));
 				}
 				tr.append(el('td', undefined, data.systemDaysLine));
-				body.append(tr);
 
-				if (row.chag) {
-					const lines = chagGadolLines(row.chag, data, hebrewYearGematria(hebrew.year));
-					const chagTr = el('tr', 'chag');
-					const cell = el('td');
-					cell.colSpan = 4;
-					cell.append(el('div', undefined, `מערכת זמנים גדול (חגים): ${lines.line1}`));
-					if (lines.line2) cell.append(el('div', undefined, lines.line2));
-					cell.append(el('div', undefined, lines.line3));
-					if (hebrew.month === 'Tishrei' && NESHAMA_DAYS.has(hebrew.day)) {
-						cell.append(el('div', undefined, 'המשכת אור פנימי — ראו בסוף הלוח'));
+				if (hasChag) {
+					const chagCell = el('td', 'chag-cell');
+					if (row.chag) {
+						const lines = chagGadolLines(row.chag, data, hebrewYearGematria(hebrew.year));
+						chagCell.append(el('div', undefined, lines.line1));
+						if (lines.line2) chagCell.append(el('div', undefined, lines.line2));
+						if (hebrew.month === 'Tishrei' && NESHAMA_DAYS.has(hebrew.day)) {
+							chagCell.append(el('div', undefined, 'המשכת אור פנימי — ראו בסוף הלוח'));
+						}
 					}
-					chagTr.append(cell);
-					body.append(chagTr);
+					tr.append(chagCell);
 				}
+				body.append(tr);
 			}
 			table.append(body);
 			return table;
@@ -529,8 +569,12 @@ import { withBase } from '../lib/url';
 				if (my !== generation) return;
 
 				sheet.innerHTML = '';
-				sheet.append(el('h1', undefined, 'הכתובת היומית על פי הרש״ש'));
-				sheet.append(el('div', 'sheet-sub', mode === 'month' ? 'לוח חודשי' : 'לוח שבועי'));
+				sheet.className = `sheet ${mode === 'month' ? 'month-layout' : 'week-layout'}`;
+				pageStyleEl.textContent = `@page { size: A4 ${mode === 'month' ? 'landscape' : 'portrait'}; margin: 8mm; }`;
+
+				// כל הלוח (כותרת + טבלאות) נכנס לעמוד אחד; נספח התמונות (אם יש) בעמודים נפרדים אחריו
+				const main = el('div', 'sheet-main');
+				main.append(el('h1', undefined, `הכתובת היומית על פי הרש״ש — ${mode === 'month' ? 'לוח חודשי' : 'לוח שבועי'}`));
 
 				// מקבצים ימים רצופים לפי חודש הכתובת (monthForSefira): יום ל' נכלל בחודש הבא,
 				// ושבוע שחוצה חודשים מקבל כותרת לכל חודש.
@@ -543,8 +587,9 @@ import { withBase } from '../lib/url';
 				for (const rowsOfMonth of segments) {
 					const seg = el('div', 'segment');
 					seg.append(buildSegmentTitle(rowsOfMonth), buildTable(rowsOfMonth));
-					sheet.append(seg);
+					main.append(seg);
 				}
+				sheet.append(main);
 				const neshama = buildNeshamaSection(rows);
 				if (neshama) sheet.append(neshama);
 
@@ -622,6 +667,24 @@ import { withBase } from '../lib/url';
 			await populateDays(parseInt(daySelectEl.value, 10) || 1);
 			await render();
 		});
+		// בהדפסה: אם הלוח הראשי (בלי נספח התמונות) גבוה מעמוד אחד, מכווצים אותו כך שייכנס
+		// בדיוק לעמוד. מידות העמוד בפיקסלים (96dpi) לפי A4 פחות שוליים של 8 מ"מ.
+		const PAGE_PX = { landscape: { w: 1062, h: 733 }, portrait: { w: 733, h: 1062 } };
+
+		function fitMainToPage() {
+			const main = sheet.querySelector('.sheet-main') as HTMLElement | null;
+			if (!main) return;
+			const page = sheet.classList.contains('month-layout') ? PAGE_PX.landscape : PAGE_PX.portrait;
+			main.style.zoom = '1';
+			const height = main.getBoundingClientRect().height;
+			if (height > page.h) main.style.zoom = String(Math.floor((page.h / height) * 97) / 100);
+		}
+
+		window.addEventListener('beforeprint', fitMainToPage);
+		window.addEventListener('afterprint', () => {
+			(sheet.querySelector('.sheet-main') as HTMLElement | null)?.style.setProperty('zoom', '1');
+		});
+
 		document.getElementById('printBtn')!.addEventListener('click', () => window.print());
 
 		(async () => {
