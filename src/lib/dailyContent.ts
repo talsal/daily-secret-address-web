@@ -11,7 +11,7 @@ export const HEBREW_DAY_LETTERS: Record<number, string> = {
 	21: 'כא', 22: 'כב', 23: 'כג', 24: 'כד', 25: 'כה', 26: 'כו', 27: 'כז', 28: 'כח', 29: 'כט', 30: 'ל',
 };
 
-const WEEKDAY_HEBREW: Record<string, string> = {
+export const WEEKDAY_HEBREW: Record<string, string> = {
 	Sunday: 'ראשון', Monday: 'שני', Tuesday: 'שלישי', Wednesday: 'רביעי',
 	Thursday: 'חמישי', Friday: 'שישי', Saturday: 'שבת',
 };
