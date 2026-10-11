@@ -290,8 +290,8 @@ import { withBase } from '../lib/url';
 		<div class="controls no-print">
 			<label for="mode">תצוגה:</label>
 			<select id="mode">
-				<option value="week">שבוע</option>
 				<option value="month">חודש עברי</option>
+				<option value="week">שבוע</option>
 			</select>
 			<label for="daySelect" id="dayLabel">יום:</label>
 			<select id="daySelect" aria-label="יום"></select>
@@ -595,6 +595,7 @@ import { withBase } from '../lib/url';
 
 				statusEl.style.display = 'none';
 				sheet.style.display = 'block';
+				fitMainToPage();
 			} catch (e) {
 				console.error(e);
 				if (my !== generation) return;
@@ -667,23 +668,30 @@ import { withBase } from '../lib/url';
 			await populateDays(parseInt(daySelectEl.value, 10) || 1);
 			await render();
 		});
-		// בהדפסה: אם הלוח הראשי (בלי נספח התמונות) גבוה מעמוד אחד, מכווצים אותו כך שייכנס
-		// בדיוק לעמוד. מידות העמוד בפיקסלים (96dpi) לפי A4 פחות שוליים של 8 מ"מ.
+		// התאמת הלוח לעמוד אחד: מחפשים את גודל הגופן הגדול ביותר שבו הלוח הראשי (בלי נספח
+		// התמונות) עדיין נכנס בגובה העמוד -- גם מגדילים כשיש מקום פנוי וגם מקטינים כשצפוף.
+		// מידות העמוד בפיקסלים (96dpi) לפי A4 פחות שוליים של 8 מ"מ.
 		const PAGE_PX = { landscape: { w: 1062, h: 733 }, portrait: { w: 733, h: 1062 } };
+		const FONT_RANGE = { month: { min: 6, max: 15 }, week: { min: 9, max: 18 } };
 
 		function fitMainToPage() {
 			const main = sheet.querySelector('.sheet-main') as HTMLElement | null;
 			if (!main) return;
-			const page = sheet.classList.contains('month-layout') ? PAGE_PX.landscape : PAGE_PX.portrait;
-			main.style.zoom = '1';
-			const height = main.getBoundingClientRect().height;
-			if (height > page.h) main.style.zoom = String(Math.floor((page.h / height) * 97) / 100);
+			const isMonth = sheet.classList.contains('month-layout');
+			const limit = (isMonth ? PAGE_PX.landscape.h : PAGE_PX.portrait.h) * 0.98;
+			const range = isMonth ? FONT_RANGE.month : FONT_RANGE.week;
+			let low = range.min;
+			let high = range.max;
+			for (let i = 0; i < 8; i++) {
+				const mid = (low + high) / 2;
+				main.style.fontSize = `${mid}px`;
+				if (main.getBoundingClientRect().height <= limit) low = mid;
+				else high = mid;
+			}
+			main.style.fontSize = `${low}px`;
 		}
 
 		window.addEventListener('beforeprint', fitMainToPage);
-		window.addEventListener('afterprint', () => {
-			(sheet.querySelector('.sheet-main') as HTMLElement | null)?.style.setProperty('zoom', '1');
-		});
 
 		document.getElementById('printBtn')!.addEventListener('click', () => window.print());
 
