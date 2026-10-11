@@ -266,12 +266,15 @@ import { withBase } from '../lib/url';
 				<option value="week">שבוע</option>
 				<option value="month">חודש עברי</option>
 			</select>
-			<label for="anchorDate">תאריך (לועזי):</label>
-			<input type="date" id="anchorDate" />
+			<label for="daySelect" id="dayLabel">יום:</label>
+			<select id="daySelect" aria-label="יום"></select>
+			<label for="monthSelect">חודש:</label>
+			<select id="monthSelect"></select>
+			<select id="yearSelect" aria-label="שנה"></select>
 			<button type="button" class="primary" id="printBtn">הדפסה / שמירה כ־PDF</button>
 		</div>
 		<p style="text-align:center;color:var(--text-dim);font-size:0.85rem;margin:-10px 0 20px" class="no-print">
-			שבוע = ראשון עד שבת של התאריך שנבחר. חודש = כל החודש העברי שבו נמצא התאריך.
+			שבוע = ראשון עד שבת של היום העברי שנבחר. חודש עברי = כל ימי החודש שנבחר.
 		</p>
 
 		<div id="status" class="no-print" role="status" aria-live="polite">טוען…</div>
@@ -310,7 +313,10 @@ import { withBase } from '../lib/url';
 		}
 
 		const modeEl = document.getElementById('mode') as HTMLSelectElement;
-		const anchorEl = document.getElementById('anchorDate') as HTMLInputElement;
+		const daySelectEl = document.getElementById('daySelect') as HTMLSelectElement;
+		const dayLabelEl = document.getElementById('dayLabel') as HTMLElement;
+		const monthSelectEl = document.getElementById('monthSelect') as HTMLSelectElement;
+		const yearSelectEl = document.getElementById('yearSelect') as HTMLSelectElement;
 		const sheet = document.getElementById('sheet') as HTMLElement;
 		const statusEl = document.getElementById('status') as HTMLElement;
 		const errorEl = document.getElementById('error') as HTMLElement;
@@ -334,37 +340,22 @@ import { withBase } from '../lib/url';
 			return noon(d);
 		}
 
-		function toInputValue(date: Date): string {
-			const m = String(date.getMonth() + 1).padStart(2, '0');
-			const d = String(date.getDate()).padStart(2, '0');
-			return `${date.getFullYear()}-${m}-${d}`;
-		}
-
-		function shortG(date: Date): string {
-			return `${date.getDate()}.${date.getMonth() + 1}`;
-		}
-
-		function longG(date: Date): string {
-			return `${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()}`;
-		}
-
 		// בונה את רשימת הימים (עם כל הנתונים) לשבוע/חודש. בחודש -- תאריך הפתיחה
 		// מומר פעם אחת ושאר הימים מחושבים מקומית (יום עברי d = פתיחה + d-1);
 		// בשבוע -- כל יום נשלף מ-Hebcal.
-		async function buildRows(mode: string, anchor: Date): Promise<DayRow[]> {
+		async function buildRows(mode: string, anchor: Date, hebrewMonth: { year: number; month: string }): Promise<DayRow[]> {
 			let dates: Date[];
 			let hebrews: HebrewDate[];
 			let yesterdayOfFirst: number;
 
 			if (mode === 'month') {
-				const anchorHebrew = await fetchHebrewDate(anchor);
-				const yearInfo = await getHebrewYearInfo(anchorHebrew.year);
-				const dayCount = yearInfo.dayCounts[anchorHebrew.month] ?? 30;
-				const start = await convertHebrewToGregorian(anchorHebrew.year, anchorHebrew.month, 1);
+				const yearInfo = await getHebrewYearInfo(hebrewMonth.year);
+				const dayCount = yearInfo.dayCounts[hebrewMonth.month] ?? 30;
+				const start = await convertHebrewToGregorian(hebrewMonth.year, hebrewMonth.month, 1);
 				dates = Array.from({ length: dayCount }, (_, i) => addDays(start, i));
 				hebrews = dates.map((date, i) => ({
-					year: anchorHebrew.year,
-					month: anchorHebrew.month,
+					year: hebrewMonth.year,
+					month: hebrewMonth.month,
 					day: i + 1,
 					weekday: WEEKDAYS[date.getDay()],
 					hebrewText: '',
@@ -404,7 +395,6 @@ import { withBase } from '../lib/url';
 			const box = el('section', 'segment-title');
 
 			box.append(el('h2', undefined, `${MONTH_HEBREW[titleRow.hebrew.month] ?? titleRow.hebrew.month} ${hebrewYearGematria(titleRow.hebrew.year)}`));
-			box.append(el('div', 'range', `${longG(rows[0].date)} – ${longG(rows[rows.length - 1].date)}`));
 
 			const pasuk = el('div', 'pasuk');
 			for (const seg of getPasukSegments(titleRow.monthForSefira)) {
@@ -448,15 +438,15 @@ import { withBase } from '../lib/url';
 
 			const body = el('tbody');
 			for (const row of rows) {
-				const { hebrew, data, date } = row;
+				const { hebrew, data } = row;
 				const tr = el('tr', data.roshChodeshLine ? 'is-rc' : undefined);
 
 				const dayCell = el('td', 'day-cell');
 				dayCell.append(document.createTextNode(`${HEBREW_DAY_LETTERS[hebrew.day] ?? hebrew.day} · ${WEEKDAY_HEBREW[hebrew.weekday] ?? hebrew.weekday}`));
-				const notes = [shortG(date)];
+				const notes: string[] = [];
 				if (hebrew.month !== titleMonth) notes.push(MONTH_HEBREW[hebrew.month] ?? hebrew.month);
 				if (row.monthForSefira !== hebrew.month) notes.push(`כתובת ${MONTH_HEBREW[row.monthForSefira] ?? row.monthForSefira}`);
-				dayCell.append(el('span', 'gdate', notes.join(' · ')));
+				if (notes.length > 0) dayCell.append(el('span', 'gdate', notes.join(' · ')));
 				tr.append(dayCell);
 
 				// כמו באתר/באפליקציה: בימי ר"ח השורה המיוחדת מחליפה את ספירת היום ופרצוף השבוע
@@ -511,9 +501,8 @@ import { withBase } from '../lib/url';
 		async function render() {
 			const my = ++generation;
 			const mode = modeEl.value;
-			const [y, m, d] = anchorEl.value.split('-').map(Number);
-			if (!y || !m || !d) return;
-			const anchor = new Date(y, m - 1, d, 12, 0, 0);
+			const hebrewMonth = { year: parseInt(yearSelectEl.value, 10), month: monthSelectEl.value };
+			if (!hebrewMonth.year || !hebrewMonth.month) return;
 
 			statusEl.style.display = 'block';
 			statusEl.textContent = 'טוען…';
@@ -521,7 +510,12 @@ import { withBase } from '../lib/url';
 			sheet.style.display = 'none';
 
 			try {
-				const rows = await buildRows(mode, anchor);
+				const anchor =
+					mode === 'week'
+						? await convertHebrewToGregorian(hebrewMonth.year, hebrewMonth.month, parseInt(daySelectEl.value, 10) || 1)
+						: new Date();
+				if (my !== generation) return;
+				const rows = await buildRows(mode, anchor, hebrewMonth);
 				if (my !== generation) return;
 
 				sheet.innerHTML = '';
@@ -565,12 +559,78 @@ import { withBase } from '../lib/url';
 			}
 		}
 
-		modeEl.addEventListener('change', render);
-		anchorEl.addEventListener('change', render);
+		// בורר החודש העברי: שנה (באותיות) + חודשי אותה שנה, כמו בעמוד "הכתובת של היום"
+		const YEARS_BACK = 100;
+		const YEARS_FORWARD = 30;
+
+		function populateYears(selectedYear: number) {
+			yearSelectEl.innerHTML = '';
+			for (let y = selectedYear + YEARS_FORWARD; y >= selectedYear - YEARS_BACK; y--) {
+				const option = document.createElement('option');
+				option.value = String(y);
+				option.textContent = hebrewYearGematria(y);
+				yearSelectEl.append(option);
+			}
+			yearSelectEl.value = String(selectedYear);
+		}
+
+		async function populateMonths(year: number, preferredMonth: string) {
+			const info = await getHebrewYearInfo(year);
+			monthSelectEl.innerHTML = '';
+			for (const month of info.monthOrder) {
+				const option = document.createElement('option');
+				option.value = month;
+				option.textContent = MONTH_HEBREW[month] ?? month;
+				monthSelectEl.append(option);
+			}
+			// אדר א'/ב' בשנה לא מעוברת (ולהפך) -- נופלים ל"אדר"/לחודש הראשון
+			if (info.monthOrder.includes(preferredMonth)) monthSelectEl.value = preferredMonth;
+			else if ((preferredMonth === 'Adar I' || preferredMonth === 'Adar II') && info.monthOrder.includes('Adar')) monthSelectEl.value = 'Adar';
+			else if (preferredMonth === 'Adar' && info.monthOrder.includes('Adar II')) monthSelectEl.value = 'Adar II';
+			else monthSelectEl.value = info.monthOrder[0];
+		}
+
+		async function populateDays(selectedDay: number) {
+			const info = await getHebrewYearInfo(parseInt(yearSelectEl.value, 10));
+			const dayCount = info.dayCounts[monthSelectEl.value] ?? 30;
+			daySelectEl.innerHTML = '';
+			for (let d = 1; d <= dayCount; d++) {
+				const option = document.createElement('option');
+				option.value = String(d);
+				option.textContent = HEBREW_DAY_LETTERS[d] ?? String(d);
+				daySelectEl.append(option);
+			}
+			daySelectEl.value = String(Math.min(selectedDay, dayCount));
+		}
+
+		function applyModeVisibility() {
+			const isMonth = modeEl.value === 'month';
+			daySelectEl.style.display = isMonth ? 'none' : '';
+			dayLabelEl.style.display = isMonth ? 'none' : '';
+		}
+
+		modeEl.addEventListener('change', () => {
+			applyModeVisibility();
+			render();
+		});
+		daySelectEl.addEventListener('change', render);
+		monthSelectEl.addEventListener('change', async () => {
+			await populateDays(parseInt(daySelectEl.value, 10) || 1);
+			await render();
+		});
+		yearSelectEl.addEventListener('change', async () => {
+			await populateMonths(parseInt(yearSelectEl.value, 10), monthSelectEl.value);
+			await populateDays(parseInt(daySelectEl.value, 10) || 1);
+			await render();
+		});
 		document.getElementById('printBtn')!.addEventListener('click', () => window.print());
 
 		(async () => {
-			anchorEl.value = toInputValue(await resolveEffectiveNow());
+			const hebrewToday = await fetchHebrewDate(await resolveEffectiveNow());
+			populateYears(hebrewToday.year);
+			await populateMonths(hebrewToday.year, hebrewToday.month);
+			await populateDays(hebrewToday.day);
+			applyModeVisibility();
 			await render();
 		})();
 	</script>
