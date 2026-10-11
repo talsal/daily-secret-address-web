@@ -45,7 +45,7 @@ const DAY_SEFIRA: Record<string, string> = {
 
 const MONTH_PASUK: Record<string, string> = {
 	Tishrei: 'וַיִּרְאוּ אֹתָהּ שָׂרֵי פַרְעֹה',
-	Cheshvan: 'וְדָבַשׁ הַיּוֹם הַזֶּה יְהוָה',
+	Cheshvan: 'וּדָבַשׁ הַיּוֹם הַזֶּה יְהוָה',
 	Kislev: 'וַיַּרְא יוֹשֵׁב הָאָרֶץ הַכְּנַעֲנִי',
 	Tevet: 'לַה׳ אִתִּי וּנְרוֹמְמָה שְׁמוֹ',
 	"Sh'vat": 'הָמֵר יְמִירֶנּוּ וְהָיָה הוּא',
@@ -83,6 +83,7 @@ export interface DailySpiritualContent {
 	monthSefira: string;
 	monthPasuk: string;
 	tzerufHavaya: string;
+	tzerufEhyeh: string;
 	yearSefira: string;
 	decadeSefira: string;
 	hundredSefira: string;
@@ -180,7 +181,7 @@ function computeHighlightLocations(fullText: string, isSuffix: boolean): { wordS
 	return result;
 }
 
-function extractTzeruf(fullText: string, isSuffix: boolean): string {
+function extractTzerufLetters(fullText: string, isSuffix: boolean): string[] {
 	const locations = computeHighlightLocations(fullText, isSuffix);
 	const letters: string[] = [];
 
@@ -207,7 +208,22 @@ function extractTzeruf(fullText: string, isSuffix: boolean): string {
 		letters.push(letterAttr);
 	}
 
-	return letters.join('  ');
+	return letters;
+}
+
+// צירוף שם אהיה לכל חודש (אותיות א-ה-י-ה בסדר המתאים לחודש). הניקוד של כל אות
+// הוא בדיוק הניקוד של האות שבאותו מקום בצירוף ההוי"ה של החודש.
+const EHYEH_TZERUF: Record<string, string> = {
+	Nisan: 'אהיה', Iyyar: 'אההי', Sivan: 'איהה', Tamuz: 'היהא', Av: 'היאה', Elul: 'ההיא',
+	Tishrei: 'יהאה', Cheshvan: 'יההא', Kislev: 'יאהה', Tevet: 'האהי', "Sh'vat": 'האיה',
+	Adar: 'ההאי', 'Adar I': 'ההאי', 'Adar II': 'ההאי',
+};
+
+function extractEhyehTzeruf(monthForSefira: string, havayaLetters: string[]): string {
+	const ehyeh = EHYEH_TZERUF[monthForSefira];
+	if (!ehyeh) return '';
+	const base = Array.from(ehyeh);
+	return base.map((letter, i) => letter + (havayaLetters[i] ?? '').slice(1)).join('  ');
 }
 
 export interface PasukSegment {
@@ -265,7 +281,9 @@ export function computeDailyContent(params: {
 	const monthSefira = MONTH_SEFIRA[monthForSefira] ?? '';
 	const monthEvar = MONTH_EVAR[monthForSefira] ?? '';
 	const monthPasuk = MONTH_PASUK[monthForSefira] ?? '';
-	const tzerufHavaya = monthPasuk ? extractTzeruf(monthPasuk, SUFFIX_MONTHS.has(monthForSefira)) : '';
+	const havayaLetters = monthPasuk ? extractTzerufLetters(monthPasuk, SUFFIX_MONTHS.has(monthForSefira)) : [];
+	const tzerufHavaya = havayaLetters.join('  ');
+	const tzerufEhyeh = extractEhyehTzeruf(monthForSefira, havayaLetters);
 	const seasonMaBen = WINTER_MONTHS.has(month) ? 'מ״ה דמ״ה ומ״ה דב״ן (דז״א)' : 'ב״ן דמ״ה וב״ן דב״ן (דנוק׳)';
 
 	const yearSefira = ONES_SEFIRA[yearOnes(year)];
@@ -290,6 +308,7 @@ export function computeDailyContent(params: {
 		monthSefira,
 		monthPasuk,
 		tzerufHavaya,
+		tzerufEhyeh,
 		yearSefira,
 		decadeSefira,
 		hundredSefira,

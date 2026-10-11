@@ -157,6 +157,9 @@ import { withBase } from '../lib/url';
 			color: #e08787;
 			font-size: 1.3rem;
 		}
+		.tzeruf .tzeruf-ehyeh {
+			margin-inline-start: 2rem;
+		}
 		:global(.season-row) {
 			text-align: center;
 			font-size: 0.92rem;
@@ -270,7 +273,7 @@ import { withBase } from '../lib/url';
 			<div class="card" id="pasukCard">
 				<div class="pasuk" id="pasukLine"></div>
 				<div class="tzeruf">
-					<span class="tzeruf-label">צירוף השם: </span><span class="tzeruf-letters" id="tzerufLine"></span>
+					<span class="tzeruf-label">צירוף השם: </span><span class="tzeruf-letters" id="tzerufLine"></span><span class="tzeruf-letters tzeruf-ehyeh" id="tzerufEhyehLine"></span>
 				</div>
 			</div>
 
@@ -529,6 +532,7 @@ import { withBase } from '../lib/url';
 				}
 
 				(document.getElementById('tzerufLine') as HTMLElement).textContent = data.tzerufHavaya;
+				(document.getElementById('tzerufEhyehLine') as HTMLElement).textContent = data.tzerufEhyeh;
 
 				if (data.roshChodeshLine) {
 					(document.getElementById('roshChodeshLine') as HTMLElement).textContent = data.roshChodeshLine;
