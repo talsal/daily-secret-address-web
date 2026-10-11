@@ -45,7 +45,7 @@ const DAY_SEFIRA: Record<string, string> = {
 
 const MONTH_PASUK: Record<string, string> = {
 	Tishrei: 'וַיִּרְאוּ אֹתָהּ שָׂרֵי פַרְעֹה',
-	Cheshvan: 'וְדָבַשׁ הַיּוֹם הַזֶּה ה׳',
+	Cheshvan: 'וְדָבַשׁ הַיּוֹם הַזֶּה יְהוָה',
 	Kislev: 'וַיַּרְא יוֹשֵׁב הָאָרֶץ הַכְּנַעֲנִי',
 	Tevet: 'לַה׳ אִתִּי וּנְרוֹמְמָה שְׁמוֹ',
 	"Sh'vat": 'הָמֵר יְמִירֶנּוּ וְהָיָה הוּא',
