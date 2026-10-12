@@ -291,17 +291,20 @@ import { withBase } from '../lib/url';
 			<label for="mode">תצוגה:</label>
 			<select id="mode">
 				<option value="month">חודש עברי</option>
-				<option value="week">שבוע</option>
+				<option value="currentWeek">השבוע הנוכחי (ראשון–שבת)</option>
+				<option value="week">שבוע לבחירה</option>
 			</select>
-			<label for="daySelect" id="dayLabel">יום:</label>
-			<select id="daySelect" aria-label="יום"></select>
-			<label for="monthSelect">חודש:</label>
-			<select id="monthSelect"></select>
-			<select id="yearSelect" aria-label="שנה"></select>
+			<span id="pickers">
+				<label for="daySelect" id="dayLabel">יום:</label>
+				<select id="daySelect" aria-label="יום"></select>
+				<label for="monthSelect">חודש:</label>
+				<select id="monthSelect"></select>
+				<select id="yearSelect" aria-label="שנה"></select>
+			</span>
 			<button type="button" class="primary" id="printBtn">הדפסה / שמירה כ־PDF</button>
 		</div>
 		<p style="text-align:center;color:var(--text-dim);font-size:0.85rem;margin:-10px 0 20px" class="no-print">
-			שבוע = ראשון עד שבת של היום העברי שנבחר. חודש עברי = כל ימי החודש שנבחר.
+			השבוע הנוכחי = ראשון עד שבת של השבוע שבו אנחנו נמצאים. שבוע לבחירה = ראשון עד שבת של היום העברי שנבחר. חודש עברי = כל ימי החודש שנבחר.
 		</p>
 
 		<div id="status" class="no-print" role="status" aria-live="polite">טוען…</div>
@@ -342,6 +345,8 @@ import { withBase } from '../lib/url';
 		const modeEl = document.getElementById('mode') as HTMLSelectElement;
 		const daySelectEl = document.getElementById('daySelect') as HTMLSelectElement;
 		const dayLabelEl = document.getElementById('dayLabel') as HTMLElement;
+		const pickersEl = document.getElementById('pickers') as HTMLElement;
+		let effectiveToday: Date | null = null;
 		const monthSelectEl = document.getElementById('monthSelect') as HTMLSelectElement;
 		const yearSelectEl = document.getElementById('yearSelect') as HTMLSelectElement;
 		const sheet = document.getElementById('sheet') as HTMLElement;
@@ -560,12 +565,17 @@ import { withBase } from '../lib/url';
 			sheet.style.display = 'none';
 
 			try {
-				const anchor =
-					mode === 'week'
-						? await convertHebrewToGregorian(hebrewMonth.year, hebrewMonth.month, parseInt(daySelectEl.value, 10) || 1)
-						: new Date();
+				let anchor: Date;
+				if (mode === 'week') {
+					anchor = await convertHebrewToGregorian(hebrewMonth.year, hebrewMonth.month, parseInt(daySelectEl.value, 10) || 1);
+				} else if (mode === 'currentWeek') {
+					effectiveToday ??= await resolveEffectiveNow();
+					anchor = effectiveToday;
+				} else {
+					anchor = new Date();
+				}
 				if (my !== generation) return;
-				const rows = await buildRows(mode, anchor, hebrewMonth);
+				const rows = await buildRows(mode === 'month' ? 'month' : 'week', anchor, hebrewMonth);
 				if (my !== generation) return;
 
 				sheet.innerHTML = '';
@@ -649,9 +659,11 @@ import { withBase } from '../lib/url';
 		}
 
 		function applyModeVisibility() {
-			const isMonth = modeEl.value === 'month';
-			daySelectEl.style.display = isMonth ? 'none' : '';
-			dayLabelEl.style.display = isMonth ? 'none' : '';
+			const mode = modeEl.value;
+			pickersEl.style.display = mode === 'currentWeek' ? 'none' : '';
+			const hideDay = mode === 'month';
+			daySelectEl.style.display = hideDay ? 'none' : '';
+			dayLabelEl.style.display = hideDay ? 'none' : '';
 		}
 
 		modeEl.addEventListener('change', () => {
