@@ -105,22 +105,22 @@ import { withBase } from '../lib/url';
 			font-size: var(--fs);
 		}
 		.sheet h1 {
-			margin: 0 0 6px;
+			margin: 0 0 0.6em;
 			font-size: 1.5em;
 			text-align: center;
 		}
 		.segment {
-			margin-bottom: 14px;
+			margin-bottom: 1.2em;
 		}
 		.segment-title {
 			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 6px 18px;
+			grid-template-columns: 2fr 3fr;
+			gap: 0.6em 2em;
 			align-items: center;
 			border: 1.5px solid #333;
 			border-radius: 6px;
-			padding: 6px 10px;
-			margin-bottom: 6px;
+			padding: 0.7em 1em;
+			margin-bottom: 0.9em;
 			break-inside: avoid;
 		}
 		.title-head {
@@ -151,8 +151,8 @@ import { withBase } from '../lib/url';
 		}
 		.segment-title dl {
 			display: grid;
-			grid-template-columns: max-content 1fr;
-			gap: 1px 10px;
+			grid-template-columns: max-content 1fr max-content 1fr;
+			gap: 0.25em 1em;
 			margin: 0;
 		}
 		.segment-title dt {
@@ -170,7 +170,7 @@ import { withBase } from '../lib/url';
 		table.days th,
 		table.days td {
 			border: 1px solid #999;
-			padding: 1.5px 5px;
+			padding: 0.24em 0.8em;
 			vertical-align: middle;
 			text-align: right;
 		}
@@ -187,19 +187,19 @@ import { withBase } from '../lib/url';
 			break-inside: avoid;
 		}
 		table.days col.c-day {
-			width: 11%;
+			width: 9%;
 		}
 		table.days col.c-sefira {
-			width: 9%;
+			width: 8%;
 		}
 		table.days col.c-face {
-			width: 9%;
+			width: 8%;
 		}
 		table.days col.c-system {
-			width: 48%;
+			width: 55%;
 		}
 		table.days col.c-chag {
-			width: 23%;
+			width: 20%;
 		}
 		.week-layout table.days col.c-day {
 			width: 14%;
@@ -274,11 +274,14 @@ import { withBase } from '../lib/url';
 				padding: 0;
 				border-radius: 0;
 			}
-			.sheet.month-layout {
-				width: 1062px;
-			}
+			.sheet.month-layout,
 			.sheet.week-layout {
-				width: 733px;
+				width: 100%;
+			}
+			html,
+			body {
+				overflow: visible !important;
+				max-width: none !important;
 			}
 		}
 	</style>
@@ -310,6 +313,7 @@ import { withBase } from '../lib/url';
 		<div id="status" class="no-print" role="status" aria-live="polite">טוען…</div>
 		<div id="error" class="no-print" role="alert">לא ניתן היה לטעון את הנתונים. נסו לרענן את העמוד.</div>
 
+		<div id="pageProbe" aria-hidden="true" style="position:fixed;inset:0;visibility:hidden;pointer-events:none"></div>
 		<div class="sheet-scroll"><div class="sheet" id="sheet" style="display:none"></div></div>
 	</div>
 
@@ -686,15 +690,20 @@ import { withBase } from '../lib/url';
 		const PAGE_PX = { landscape: { w: 1062, h: 733 }, portrait: { w: 733, h: 1062 } };
 		const FONT_RANGE = { month: { min: 6, max: 15 }, week: { min: 9, max: 18 } };
 
-		function fitMainToPage() {
+		const pageProbe = document.getElementById('pageProbe') as HTMLElement;
+
+		// בזמן הדפסה ה-probe (מקובע לכל שטח הדף) מחזיר את גודל האזור הניתן להדפסה בפועל --
+		// כך ההתאמה נכונה גם אם הדפדפן מתעלם מכיוון הדף או משוליים שונים מהצפוי.
+		function fitMainToPage(printSize?: { w: number; h: number }) {
 			const main = sheet.querySelector('.sheet-main') as HTMLElement | null;
 			if (!main) return;
 			const isMonth = sheet.classList.contains('month-layout');
-			const limit = (isMonth ? PAGE_PX.landscape.h : PAGE_PX.portrait.h) * 0.98;
+			const page = printSize ?? (isMonth ? PAGE_PX.landscape : PAGE_PX.portrait);
+			const limit = page.h * 0.97;
 			const range = isMonth ? FONT_RANGE.month : FONT_RANGE.week;
 			let low = range.min;
 			let high = range.max;
-			for (let i = 0; i < 8; i++) {
+			for (let i = 0; i < 9; i++) {
 				const mid = (low + high) / 2;
 				main.style.fontSize = `${mid}px`;
 				if (main.getBoundingClientRect().height <= limit) low = mid;
@@ -703,7 +712,18 @@ import { withBase } from '../lib/url';
 			main.style.fontSize = `${low}px`;
 		}
 
-		window.addEventListener('beforeprint', fitMainToPage);
+		function fitForPrint() {
+			const r = pageProbe.getBoundingClientRect();
+			fitMainToPage(r.width > 200 && r.height > 200 ? { w: r.width, h: r.height } : undefined);
+		}
+
+		window.addEventListener('beforeprint', () => fitMainToPage());
+		const printQuery = window.matchMedia('print');
+		printQuery.addEventListener('change', (e) => {
+			if (e.matches) fitForPrint();
+			else fitMainToPage();
+		});
+		window.addEventListener('afterprint', () => fitMainToPage());
 
 		document.getElementById('printBtn')!.addEventListener('click', () => window.print());
 
