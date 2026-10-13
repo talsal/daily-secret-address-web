@@ -104,6 +104,9 @@ import { withBase } from '../lib/url';
 		.sheet-main {
 			font-size: var(--fs);
 		}
+		.month-layout h1 {
+			display: none;
+		}
 		.sheet h1 {
 			margin: 0 0 0.6em;
 			font-size: 1.5em;
@@ -115,12 +118,12 @@ import { withBase } from '../lib/url';
 		.segment-title {
 			display: grid;
 			grid-template-columns: 2fr 3fr;
-			gap: 0.6em 2em;
+			gap: 0.4em 2em;
 			align-items: center;
 			border: 1.5px solid #333;
 			border-radius: 6px;
-			padding: 0.7em 1em;
-			margin-bottom: 0.9em;
+			padding: 0.45em 1em;
+			margin-bottom: 0.5em;
 			break-inside: avoid;
 		}
 		.title-head {
@@ -152,7 +155,7 @@ import { withBase } from '../lib/url';
 		.segment-title dl {
 			display: grid;
 			grid-template-columns: max-content 1fr max-content 1fr;
-			gap: 0.25em 1em;
+			gap: 0.15em 1em;
 			margin: 0;
 		}
 		.segment-title dt {
@@ -163,6 +166,7 @@ import { withBase } from '../lib/url';
 			font-weight: 600;
 		}
 		table.days {
+			line-height: 1.2;
 			width: 100%;
 			border-collapse: collapse;
 			table-layout: fixed;
@@ -170,7 +174,7 @@ import { withBase } from '../lib/url';
 		table.days th,
 		table.days td {
 			border: 1px solid #999;
-			padding: 0.36em 0.8em;
+			padding: 0.2em 0.8em;
 			vertical-align: middle;
 			text-align: right;
 		}
