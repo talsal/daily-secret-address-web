@@ -170,7 +170,7 @@ import { withBase } from '../lib/url';
 		table.days th,
 		table.days td {
 			border: 1px solid #999;
-			padding: 0.24em 0.8em;
+			padding: 0.36em 0.8em;
 			vertical-align: middle;
 			text-align: right;
 		}
@@ -271,7 +271,7 @@ import { withBase } from '../lib/url';
 				overflow: visible;
 			}
 			.sheet {
-				padding: 0;
+				padding: 0 2mm;
 				border-radius: 0;
 			}
 			.sheet.month-layout,
@@ -699,14 +699,17 @@ import { withBase } from '../lib/url';
 			if (!main) return;
 			const isMonth = sheet.classList.contains('month-layout');
 			const page = printSize ?? (isMonth ? PAGE_PX.landscape : PAGE_PX.portrait);
-			const limit = page.h * 0.97;
+			const limit = page.h * 0.985;
 			const range = isMonth ? FONT_RANGE.month : FONT_RANGE.week;
+			const fits = () => main.getBoundingClientRect().height <= limit;
+
+			// הגופן הגדול ביותר שנכנס בגובה העמוד (הריווח בין השורות קבוע, בגודל יחסי לגופן)
 			let low = range.min;
 			let high = range.max;
 			for (let i = 0; i < 9; i++) {
 				const mid = (low + high) / 2;
 				main.style.fontSize = `${mid}px`;
-				if (main.getBoundingClientRect().height <= limit) low = mid;
+				if (fits()) low = mid;
 				else high = mid;
 			}
 			main.style.fontSize = `${low}px`;
