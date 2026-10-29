@@ -1,0 +1,190 @@
+---
+import QRCode from 'qrcode';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { withBase } from '../lib/url';
+
+// דף A4 להדפסה (לתליה בבית כנסת, חלוקה בסוף שיעור וכו') עם שני קודי QR:
+// גרסת ה-web (עובדת לכולם, בלי התקנה) והורדה מ-App Store (אייפון).
+// הקודים נוצרים בזמן הבנייה, בלי JavaScript בדפדפן.
+const webUrl = new URL(withBase('today'), Astro.site).toString();
+const appStoreUrl = 'https://apps.apple.com/il/app/daily-secret/id1661464150';
+
+const qrOptions = { type: 'svg' as const, margin: 1, errorCorrectionLevel: 'M' as const };
+const webQr = await QRCode.toString(webUrl, qrOptions);
+const appStoreQr = await QRCode.toString(appStoreUrl, qrOptions);
+---
+
+<BaseLayout
+	title="דף להדפסה עם קוד QR — הכתובת היומית"
+	description="דף A4 להדפסה עם קוד QR לגרסת ה-web ולהורדת האפליקציה של הכתובת היומית לפי הרש״ש."
+>
+	<style is:global>
+		.qr-wrap {
+			max-width: 720px;
+			margin: 0 auto;
+			padding: 40px 20px 96px;
+			text-align: center;
+		}
+		.qr-wrap h1 {
+			font-size: 2rem;
+			color: var(--gold-light);
+			margin: 0 0 8px;
+		}
+		.qr-wrap .qr-lead {
+			font-size: 1.15rem;
+			color: var(--text);
+			margin: 0 0 32px;
+			line-height: 1.6;
+		}
+		.qr-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 24px;
+			align-items: start;
+		}
+		@media (max-width: 560px) {
+			.qr-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+		.qr-card {
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 16px;
+			padding: 20px;
+		}
+		.qr-card h2 {
+			font-size: 1.15rem;
+			margin: 0 0 4px;
+			color: var(--gold-light);
+		}
+		.qr-card p {
+			margin: 0 0 14px;
+			font-size: 0.95rem;
+			color: var(--text-dim);
+		}
+		.qr-box {
+			background: #ffffff;
+			border-radius: 12px;
+			padding: 10px;
+			display: inline-block;
+			line-height: 0;
+		}
+		.qr-box svg {
+			width: 220px;
+			height: 220px;
+			display: block;
+		}
+		.qr-url {
+			margin-top: 12px;
+			font-size: 0.8rem;
+			color: var(--text-dim);
+			direction: ltr;
+			word-break: break-all;
+		}
+		.qr-actions {
+			margin-top: 28px;
+		}
+		.qr-actions button {
+			background: var(--gold);
+			color: #122240;
+			border: 0;
+			border-radius: 999px;
+			padding: 12px 28px;
+			font-size: 1rem;
+			font-weight: 700;
+			font-family: inherit;
+			cursor: pointer;
+		}
+		.qr-actions button:hover {
+			background: var(--gold-light);
+		}
+		.qr-foot {
+			margin-top: 28px;
+			font-size: 0.9rem;
+			color: var(--text-dim);
+		}
+		.back-link {
+			display: inline-block;
+			color: var(--text-dim);
+			text-decoration: none;
+			font-size: 0.9rem;
+			margin-bottom: 24px;
+		}
+
+		/* הדפסה: רקע לבן, טקסט שחור, בלי כפתורים, ועמוד A4 אחד */
+		@page {
+			size: A4;
+			margin: 16mm;
+		}
+		@media print {
+			html,
+			body {
+				background: #ffffff !important;
+				color: #000000 !important;
+			}
+			.qr-wrap {
+				padding: 0;
+				max-width: none;
+			}
+			.qr-wrap h1,
+			.qr-card h2 {
+				color: #000000;
+			}
+			.qr-wrap .qr-lead,
+			.qr-card p,
+			.qr-url,
+			.qr-foot {
+				color: #333333;
+			}
+			.qr-card {
+				background: #ffffff;
+				border: 1px solid #999999;
+			}
+			.qr-box {
+				padding: 0;
+			}
+			.qr-box svg {
+				width: 70mm;
+				height: 70mm;
+			}
+			.back-link,
+			.qr-actions,
+			.support-fab,
+			.skip-link,
+			footer {
+				display: none !important;
+			}
+		}
+	</style>
+
+	<div class="qr-wrap">
+		<a class="back-link" href={withBase('')}>→ חזרה</a>
+		<h1>הכתובת היומית על פי הרש״ש</h1>
+		<p class="qr-lead">לכל יום יש כתובת קבלית משלו.<br />סרקו עם המצלמה, ונסו בלי להתקין כלום.</p>
+
+		<div class="qr-grid">
+			<div class="qr-card">
+				<h2>לנסות בדפדפן</h2>
+				<p>עובד בכל טלפון ובכל מחשב</p>
+				<div class="qr-box" set:html={webQr} role="img" aria-label="קוד QR לגרסת ה-web"></div>
+				<div class="qr-url">{webUrl}</div>
+			</div>
+			<div class="qr-card">
+				<h2>אפליקציה לאייפון</h2>
+				<p>וידג'ט, תזכורת יומית והקדשת יום</p>
+				<div class="qr-box" set:html={appStoreQr} role="img" aria-label="קוד QR להורדה מ-App Store"></div>
+				<div class="qr-url">{appStoreUrl}</div>
+			</div>
+		</div>
+
+		<div class="qr-actions">
+			<button type="button" id="printBtn" data-track="qr_print_click">הדפסה</button>
+		</div>
+		<p class="qr-foot">אפשר להדפיס, לתלות ולחלק בחופשיות.</p>
+	</div>
+
+	<script>
+		document.getElementById('printBtn')!.addEventListener('click', () => window.print());
+	</script>
+</BaseLayout>
